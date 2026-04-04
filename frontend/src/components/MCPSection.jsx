@@ -5,7 +5,7 @@ import ClientTabs from './ClientTabs'
 const MCP_URL = 'https://intelliwrite-mcp.onrender.com/sse'
 
 const EXAMPLE_PROMPTS = [
-  'Generate a blog about AI in logistics for my brand Teeny Tech Trek',
+  'Generate a blog about AI in logistics for my brand',
   'Write LinkedIn and Twitter posts for the blog you just created',
   'Ingest this document into the Intelliwrite knowledge base',
 ]

@@ -105,7 +105,7 @@ export default function GeneratorForm() {
               required
               value={brandName}
               onChange={(e) => setBrandName(e.target.value)}
-              placeholder="e.g. Teeny Tech Trek"
+              placeholder="e.g. Acme Corp"
               className={inputClass}
               disabled={loading}
             />
@@ -121,7 +121,7 @@ export default function GeneratorForm() {
               required
               value={companyUrl}
               onChange={(e) => setCompanyUrl(e.target.value)}
-              placeholder="e.g. https://teenytechtrek.com"
+              placeholder="e.g. https://example.com"
               className={inputClass}
               disabled={loading}
             />

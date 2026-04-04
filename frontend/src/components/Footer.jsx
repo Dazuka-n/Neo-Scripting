@@ -7,7 +7,7 @@ export default function Footer() {
       <footer className="py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-sm text-white/30">
-            Intelliwrite by Teeny Tech Trek ·{' '}
+            Intelliwrite by Krishna ·{' '}
             <a
               href="https://intelliwrite-neon.vercel.app"
               target="_blank"

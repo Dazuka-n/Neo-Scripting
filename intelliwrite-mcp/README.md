@@ -124,7 +124,7 @@ Restart Windsurf after saving.
 Once connected, use natural language — your agent handles the tool calls:
 
 ```
-Generate a blog about AI automation in logistics for Teeny Tech Trek at teenytechtrek.com
+Generate a blog about AI automation in logistics for my brand at mycompany.com
 ```
 
 ```
