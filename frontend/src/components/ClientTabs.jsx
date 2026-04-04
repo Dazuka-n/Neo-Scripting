@@ -11,7 +11,7 @@ const CLIENTS = [
   "mcpServers": {
     "intelliwrite": {
       "type": "sse",
-      "url": "https://mcp.intelliwrite.ai/sse"
+      "url": "https://intelliwrite-mcp.onrender.com/sse"
     }
   }
 }`,
@@ -21,7 +21,7 @@ const CLIENTS = [
     label: 'Claude Code',
     description: 'Run this command in your terminal',
     language: 'shell',
-    code: `claude mcp add intelliwrite --transport sse https://mcp.intelliwrite.ai/sse`,
+    code: `claude mcp add intelliwrite --transport sse https://intelliwrite-mcp.onrender.com/sse`,
   },
   {
     id: 'cursor',
@@ -31,7 +31,7 @@ const CLIENTS = [
     code: `{
   "mcpServers": {
     "intelliwrite": {
-      "url": "https://mcp.intelliwrite.ai/sse",
+      "url": "https://intelliwrite-mcp.onrender.com/sse",
       "type": "sse"
     }
   }
@@ -45,7 +45,7 @@ const CLIENTS = [
     code: `{
   "mcpServers": {
     "intelliwrite": {
-      "serverUrl": "https://mcp.intelliwrite.ai/sse"
+      "serverUrl": "https://intelliwrite-mcp.onrender.com/sse"
     }
   }
 }`,

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import ClientTabs from './ClientTabs'
 
-const MCP_URL = 'https://mcp.intelliwrite.ai/sse'
+const MCP_URL = 'https://intelliwrite-mcp.onrender.com/sse'
 
 const EXAMPLE_PROMPTS = [
   'Generate a blog about AI in logistics for my brand Teeny Tech Trek',

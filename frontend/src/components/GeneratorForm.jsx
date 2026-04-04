@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react'
 import StepTracker from './StepTracker'
 
 const PLATFORMS = ['LinkedIn', 'Twitter', 'Reddit']
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
 export default function GeneratorForm() {
   const navigate = useNavigate()
@@ -31,7 +32,7 @@ export default function GeneratorForm() {
     setLoading(true)
 
     try {
-      const response = await fetch('http://localhost:8000/generate', {
+      const response = await fetch(`${API_URL}/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,6 +158,9 @@ export default function GeneratorForm() {
 
           {/* Submit */}
           <div className="pt-2">
+            <p className="text-xs text-white/30 text-center mt-2 mb-3">
+              ⏱ First generation may take 30–60s while the server wakes up.
+            </p>
             <button
               type="submit"
               disabled={loading || !topic || !brandName || !companyUrl}
