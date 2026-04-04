@@ -1,7 +1,80 @@
-.env
+# ── Python ────────────────────────────────────────
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
 .venv/
-env/
 venv/
+env/
+ENV/
+.Python
+pip-log.txt
+
+# ── Environment & Secrets ─────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# ── Claude & AI tools ─────────────────────────────
+.claude/
+.cursor/
+.aider*
+.continue/
+
+# ── Node / Frontend ───────────────────────────────
+node_modules/
+.next/
+out/
+*.local
+.eslintcache
+frontend/dist/
+frontend/node_modules/
+
+# ── MCP Server ────────────────────────────────────
+intelliwrite-mcp/.env
+intelliwrite-mcp/__pycache__/
+intelliwrite-mcp/.venv/
+intelliwrite-mcp/node_modules/
+
+# ── Databases & Vector stores ─────────────────────
+*.db
+*.sqlite
+*.sqlite3
+qdrant_storage/
+
+# ── Logs ──────────────────────────────────────────
 *.log
+logs/
+*.log.*
+
+# ── OS ────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── IDE ───────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Testing ───────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Misc ──────────────────────────────────────────
+*.bak
+*.tmp
+*.temp
