@@ -31,133 +31,181 @@ def _normalize_gemini_model(model_name: str) -> str:
     """Map deprecated Gemini model IDs to currently supported ones."""
     if not model_name:
         return "models/gemini-flash-latest"
-
     normalized = model_name.strip()
     normalized_lower = normalized.lower()
-
     if normalized_lower.startswith("models/gemini"):
         return normalized
-
     replacement = SUPPORTED_MODELS.get(normalized_lower)
     if replacement:
         return replacement
-
-    # If it's not a known gemini model, default to gemini-flash
     if not normalized_lower.startswith("models/"):
-         # Check if it's just the name without prefix
-         if normalized_lower in SUPPORTED_MODELS:
-             return SUPPORTED_MODELS[normalized_lower]
-             
+        if normalized_lower in SUPPORTED_MODELS:
+            return SUPPORTED_MODELS[normalized_lower]
     warnings.warn(
         f"Model '{model_name}' is not a recognized Gemini model. "
-        f"Defaulting to 'models/gemini-flash-latest'.",
+        "Defaulting to 'models/gemini-flash-latest'.",
         RuntimeWarning,
     )
     return "models/gemini-flash-latest"
 
 
+def _agent_model(env_var: str, default: str, provider: str) -> str:
+    raw = os.getenv(env_var, default)
+    if provider == "google":
+        return _normalize_gemini_model(raw)
+    return _normalize_non_google_model(raw)
+
+
+def _agent_key(env_var: str, google_key: str, openrouter_key: str, openai_key: str, provider: str) -> str:
+    if provider == "google":
+        return os.getenv(env_var) or google_key
+    return os.getenv(env_var) or openrouter_key or openai_key
+
+
+def _agent_base_url(provider: str, gemini_url: str, openrouter_url: str) -> str:
+    return gemini_url if provider == "google" else openrouter_url
+
+
 class Config:
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
-    QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-    COLLECTION_NAME = os.getenv("COLLECTION_NAME", "aeo_knowledge_base")
-    
-    # Database Configuration with Auto-Correction for pg8000
-    _raw_db_url = os.getenv("DATABASE_URL", "postgresql+pg8000://user:password@localhost:5432/aeo_blog_db")
-    
-    # 1. Force driver to pg8000
-    if _raw_db_url.startswith("postgres://"):
-        _url_with_driver = _raw_db_url.replace("postgres://", "postgresql+pg8000://", 1)
-    elif _raw_db_url.startswith("postgresql://"):
-        _url_with_driver = _raw_db_url.replace("postgresql://", "postgresql+pg8000://", 1)
-    else:
-        _url_with_driver = _raw_db_url
+    # ── LLM providers ────────────────────────────────────────────────────
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
 
-    # 2. Strip incompatible query parameters (sslmode, channel_binding) for pg8000
-    # pg8000 uses create_engine(connect_args={'ssl_context': ...}) instead of URL params
-    if "?" in _url_with_driver:
-        # Split and keep only the base URL part
-        DATABASE_URL = _url_with_driver.split("?")[0]
-    else:
-        DATABASE_URL = _url_with_driver
-        
-    # Debug Logging for Vercel
-    print(f"--- DB CONFIG ---")
-    print(f"Raw URL start: {_raw_db_url[:15]}...")
-    print(f"Final URL start: {DATABASE_URL[:25]}...")
-    print(f"Driver check: {'pg8000' in DATABASE_URL}")
-    print(f"-----------------")
+    GEMINI_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    OPENROUTER_BASE_URL: str = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 
-    # Gemini configuration (using OpenAI compatibility layer)
-    GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-    # Prioritize keys that are known to be Gemini keys in this project
-    GEMINI_API_KEY = (
-        os.getenv("GEMINI_API_KEY") or 
-        os.getenv("GOOGLE_API_KEY") or 
-        os.getenv("PLANNER_API_KEY") or 
-        os.getenv("WRITER_API_KEY") or 
-        os.getenv("API")
+    GEMINI_API_KEY: str = (
+        os.getenv("GEMINI_API_KEY")
+        or os.getenv("GOOGLE_API_KEY")
+        or os.getenv("PLANNER_API_KEY")
+        or os.getenv("WRITER_API_KEY")
+        or os.getenv("API")
+        or ""
     )
-    MODEL_NAME = os.getenv("MODEL_NAME", "models/gemini-flash-latest")
 
-    DEFAULT_LLM_PROVIDER = os.getenv("LLM_PROVIDER", "google").lower()
-
-    DEFAULT_LLM_MODEL = (
-        _normalize_gemini_model(MODEL_NAME)
-        if DEFAULT_LLM_PROVIDER == "google" else
-        _normalize_non_google_model(os.getenv("LLM_MODEL", MODEL_NAME))
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "models/gemini-flash-latest")
+    DEFAULT_LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "google").lower()
+    DEFAULT_LLM_MODEL: str = (
+        _normalize_gemini_model(os.getenv("MODEL_NAME", "models/gemini-flash-latest"))
+        if os.getenv("LLM_PROVIDER", "google").lower() == "google"
+        else _normalize_non_google_model(os.getenv("LLM_MODEL", os.getenv("MODEL_NAME", "models/gemini-flash-latest")))
     )
-    DEFAULT_LLM_API_KEY = GEMINI_API_KEY if DEFAULT_LLM_PROVIDER == "google" else (OPENROUTER_API_KEY or os.getenv("OPENAI_API_KEY"))
+    DEFAULT_LLM_API_KEY: str = (
+        (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "")
+        if os.getenv("LLM_PROVIDER", "google").lower() == "google"
+        else (os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY") or "")
+    )
 
-    # Agent-specific Configurations (defaults inherit from LLM_*)
-    def _provider_value(var_name: str, default: str):
-        return os.getenv(var_name, default).lower()
+    # ── Qdrant ───────────────────────────────────────────────────────────
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "")
+    QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
+    COLLECTION_NAME: str = os.getenv("COLLECTION_NAME", "aeo_knowledge_base")
 
-    def _model_value(env_var: str, default_model: str, provider: str):
-        raw = os.getenv(env_var, default_model)
-        if provider == "google":
-            return _normalize_gemini_model(raw)
-        return _normalize_non_google_model(raw)
+    # ── Researcher agent (always Google/Gemini) ───────────────────────────
+    RESEARCHER_PROVIDER: str = "google"
+    RESEARCHER_MODEL: str = _normalize_gemini_model(
+        os.getenv("RESEARCHER_MODEL", os.getenv("MODEL_NAME", "models/gemini-flash-latest"))
+    )
+    RESEARCHER_API_KEY: str = os.getenv("RESEARCHER_API_KEY") or (
+        os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    )
+    RESEARCHER_BASE_URL: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-    def _api_key_value(env_var: str, default_key: str, provider: str, openrouter_key: str):
-        if provider == "google":
-            return os.getenv(env_var, default_key) or default_key
-        return os.getenv(env_var, openrouter_key) or openrouter_key or os.getenv("OPENAI_API_KEY")
+    # ── Planner agent ─────────────────────────────────────────────────────
+    PLANNER_PROVIDER: str = os.getenv("PLANNER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower()
+    PLANNER_MODEL: str = _agent_model(
+        "PLANNER_MODEL",
+        os.getenv("MODEL_NAME", "models/gemini-flash-latest"),
+        os.getenv("PLANNER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    PLANNER_API_KEY: str = _agent_key(
+        "PLANNER_API_KEY",
+        os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "",
+        os.getenv("OPENROUTER_API_KEY") or "",
+        os.getenv("OPENAI_API_KEY") or "",
+        os.getenv("PLANNER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    PLANNER_BASE_URL: str = _agent_base_url(
+        os.getenv("PLANNER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+        os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    )
 
-    def _base_url(provider: str, openrouter_base_url: str):
-        if provider == "google":
-            return GEMINI_BASE_URL
-        return openrouter_base_url
+    # ── Writer agent ──────────────────────────────────────────────────────
+    WRITER_PROVIDER: str = os.getenv("WRITER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower()
+    WRITER_MODEL: str = _agent_model(
+        "WRITER_MODEL",
+        os.getenv("MODEL_NAME", "models/gemini-flash-latest"),
+        os.getenv("WRITER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    WRITER_API_KEY: str = _agent_key(
+        "WRITER_API_KEY",
+        os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "",
+        os.getenv("OPENROUTER_API_KEY") or "",
+        os.getenv("OPENAI_API_KEY") or "",
+        os.getenv("WRITER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    WRITER_BASE_URL: str = _agent_base_url(
+        os.getenv("WRITER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+        os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    )
 
-    if not GEMINI_API_KEY:
-        raise RuntimeError(
-            "A GEMINI_API_KEY is required because the researcher agent is pinned to Gemini."
+    # ── Optimizer agent ───────────────────────────────────────────────────
+    OPTIMIZER_PROVIDER: str = os.getenv("OPTIMIZER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower()
+    OPTIMIZER_MODEL: str = _agent_model(
+        "OPTIMIZER_MODEL",
+        os.getenv("MODEL_NAME", "models/gemini-flash-latest"),
+        os.getenv("OPTIMIZER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    OPTIMIZER_API_KEY: str = _agent_key(
+        "OPTIMIZER_API_KEY",
+        os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "",
+        os.getenv("OPENROUTER_API_KEY") or "",
+        os.getenv("OPENAI_API_KEY") or "",
+        os.getenv("OPTIMIZER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    OPTIMIZER_BASE_URL: str = _agent_base_url(
+        os.getenv("OPTIMIZER_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+        os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    )
+
+    # ── QA agent ──────────────────────────────────────────────────────────
+    QA_PROVIDER: str = os.getenv("QA_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower()
+    QA_MODEL: str = _agent_model(
+        "QA_MODEL",
+        os.getenv("MODEL_NAME", "models/gemini-flash-latest"),
+        os.getenv("QA_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    QA_API_KEY: str = _agent_key(
+        "QA_API_KEY",
+        os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "",
+        os.getenv("OPENROUTER_API_KEY") or "",
+        os.getenv("OPENAI_API_KEY") or "",
+        os.getenv("QA_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+    )
+    QA_BASE_URL: str = _agent_base_url(
+        os.getenv("QA_PROVIDER", os.getenv("LLM_PROVIDER", "google")).lower(),
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+        os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+    )
+
+
+def validate_config() -> None:
+    """
+    Validate required environment variables at startup.
+    Raises EnvironmentError with a clear message for any missing required var.
+    """
+    required = {
+        "GEMINI_API_KEY": Config.GEMINI_API_KEY,
+        "QDRANT_URL": Config.QDRANT_URL,
+        "QDRANT_API_KEY": Config.QDRANT_API_KEY,
+    }
+    missing = [name for name, value in required.items() if not value]
+    if missing:
+        raise EnvironmentError(
+            f"\n[Intelliwrite] Startup failed — missing required environment variables:\n"
+            + "\n".join(f"  - {name}" for name in missing)
+            + "\n\nSet them in your .env file. See .env.example for reference."
         )
-
-    RESEARCHER_PROVIDER = "google"
-    RESEARCHER_MODEL = _normalize_gemini_model(os.getenv("RESEARCHER_MODEL", DEFAULT_LLM_MODEL))
-    RESEARCHER_API_KEY = os.getenv("RESEARCHER_API_KEY", GEMINI_API_KEY)
-    RESEARCHER_BASE_URL = GEMINI_BASE_URL
-
-    PLANNER_PROVIDER = _provider_value("PLANNER_PROVIDER", DEFAULT_LLM_PROVIDER)
-    PLANNER_MODEL = _model_value("PLANNER_MODEL", DEFAULT_LLM_MODEL, PLANNER_PROVIDER)
-    PLANNER_API_KEY = _api_key_value("PLANNER_API_KEY", DEFAULT_LLM_API_KEY, PLANNER_PROVIDER, OPENROUTER_API_KEY)
-    PLANNER_BASE_URL = _base_url(PLANNER_PROVIDER, OPENROUTER_BASE_URL)
-
-    WRITER_PROVIDER = _provider_value("WRITER_PROVIDER", DEFAULT_LLM_PROVIDER)
-    WRITER_MODEL = _model_value("WRITER_MODEL", DEFAULT_LLM_MODEL, WRITER_PROVIDER)
-    WRITER_API_KEY = _api_key_value("WRITER_API_KEY", DEFAULT_LLM_API_KEY, WRITER_PROVIDER, OPENROUTER_API_KEY)
-    WRITER_BASE_URL = _base_url(WRITER_PROVIDER, OPENROUTER_BASE_URL)
-
-    OPTIMIZER_PROVIDER = _provider_value("OPTIMIZER_PROVIDER", DEFAULT_LLM_PROVIDER)
-    OPTIMIZER_MODEL = _model_value("OPTIMIZER_MODEL", DEFAULT_LLM_MODEL, OPTIMIZER_PROVIDER)
-    OPTIMIZER_API_KEY = _api_key_value("OPTIMIZER_API_KEY", DEFAULT_LLM_API_KEY, OPTIMIZER_PROVIDER, OPENROUTER_API_KEY)
-    OPTIMIZER_BASE_URL = _base_url(OPTIMIZER_PROVIDER, OPENROUTER_BASE_URL)
-
-    QA_PROVIDER = _provider_value("QA_PROVIDER", DEFAULT_LLM_PROVIDER)
-    QA_MODEL = _model_value("QA_MODEL", DEFAULT_LLM_MODEL, QA_PROVIDER)
-    QA_API_KEY = _api_key_value("QA_API_KEY", DEFAULT_LLM_API_KEY, QA_PROVIDER, OPENROUTER_API_KEY)
-    QA_BASE_URL = _base_url(QA_PROVIDER, OPENROUTER_BASE_URL)

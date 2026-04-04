@@ -1,33 +1,76 @@
+import os
 from textwrap import shorten
 
-from aeo_blog_engine.agents import get_researcher_agent, get_planner_agent, get_writer_agent, get_optimizer_agent, get_base_model, get_reddit_agent, get_linkedin_agent, get_twitter_agent, get_social_qa_agent, get_topic_generator_agent
+from aeo_blog_engine.agents import (
+    get_researcher_agent,
+    get_planner_agent,
+    get_writer_agent,
+    get_optimizer_agent,
+    get_base_model,
+    get_reddit_agent,
+    get_linkedin_agent,
+    get_twitter_agent,
+    get_social_qa_agent,
+    get_topic_generator_agent,
+)
 from aeo_blog_engine.knowledge.knowledge_base import get_knowledge_base
 from agno.agent import Agent
-from langfuse import observe, Langfuse
 
-# Initialize Langfuse client
-langfuse = Langfuse()
+
+# ── Langfuse: optional, non-blocking ─────────────────────────────────────────
+# The app runs normally when Langfuse keys are absent — tracing is silently skipped.
+
+_langfuse_enabled = bool(
+    os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
+)
+
+langfuse = None
+_observe_impl = None
+
+if _langfuse_enabled:
+    try:
+        from langfuse import Langfuse as _Langfuse, observe as _observe_impl
+        langfuse = _Langfuse()
+    except Exception as _lf_err:
+        print(f"[INFO] Langfuse init failed — tracing disabled. ({_lf_err})")
+        _observe_impl = None
+
+
+def observe():
+    """Decorator factory: wraps with Langfuse tracing when available, else a no-op."""
+    if _observe_impl is not None:
+        return _observe_impl()
+
+    def _noop(fn):
+        return fn
+
+    return _noop
+
+
+# ── Pipeline ──────────────────────────────────────────────────────────────────
 
 class AEOBlogPipeline:
     def __init__(self):
         print("Initializing AEO Blog Pipeline with Agno Agents...")
 
     @observe()
-    def run(self, topic: str = None, prompt: str = None):
+    def run(self, topic: str = None, prompt: str = None) -> str:
         if not topic and not prompt:
             raise ValueError("Either 'topic' or 'prompt' must be provided.")
 
-        print(f"--- Starting AEO Blog Generation ---")
-        
+        print("--- Starting AEO Blog Generation ---")
+
         total_input_tokens = 0
         total_output_tokens = 0
-        
-        # 0. Topic Generation (if needed)
+
+        # 0. Topic generation (if only prompt given)
         topic_gen_response = None
         if prompt and not topic:
             print(f"\n[0/5] Generating Topic from Prompt: '{prompt}'...")
             topic_generator = get_topic_generator_agent()
-            topic_gen_response = topic_generator.run(f"Generate a blog topic for: {prompt}", stream=False)
+            topic_gen_response = topic_generator.run(
+                f"Generate a blog topic for: {prompt}", stream=False
+            )
             topic = topic_gen_response.content.strip()
             print(f"Generated Topic: {topic}")
 
@@ -35,78 +78,15 @@ class AEOBlogPipeline:
 
         # 1. Research
         print("\n[1/5] Researching...")
-
-        def _has_research_signal(text: str) -> bool:
-            normalized = (text or "").strip().lower()
-            if not normalized:
-                return False
-
-            failure_markers = [
-                "cannot proceed",
-                "research was not provided",
-                "missing research",
-                "need the research",
-                "no research",
-                "rate limit",
-                "temporarily unavailable",
-                "quota",
-                "i apologize",
-                "cannot write the blog",
-                "without the research",
-                "please provide the research",
-                "unavailable right now",
-                "try again later",
-            ]
-
-            if any(marker in normalized for marker in failure_markers):
-                return False
-
-            # Heuristic: very short outputs (e.g., just an apology sentence) are rarely usable research.
-            # Require at least ~40 characters and at least 2 sentences/bullets.
-            if len(normalized) < 40:
-                return False
-
-            signal_delimiters = ["\n-", "\n1.", "\nbullet", "\n•", "?", ". "]
-            delimiter_hits = sum(1 for delim in signal_delimiters if delim in normalized)
-            if delimiter_hits == 0:
-                return False
-
-            return True
-
-        def _structured_fallback_research(subject: str) -> str:
-            """Generate a richer deterministic research summary when the agent fails."""
-            static_sections = [
-                f"**Market Snapshot**\n- {subject} is top-of-mind for CMOs focused on profitable growth in 2026.\n- Economic pressure pushes teams to prove clear ROI within two quarters.",
-                f"**Adoption & Investment**\n- Budgets are shifting toward AI copilots, experimentation platforms, and privacy-safe data foundations that accelerate {subject}.\n- Leaders fund pilots that shorten campaign launch cycles and unlock measurement at every touchpoint.",
-                f"**Audience Pain Points**\n- Teams struggle with fragmented data, content bottlenecks, and channel saturation.\n- Decision makers want faster validation, governance guardrails, and proof that {subject} drives incremental revenue.",
-                f"**People-Also-Ask Style Questions**\n- How does {subject} change day-to-day marketing workflows?\n- What KPIs prove success within 90 days?\n- How can smaller teams adopt {subject} without enterprise budgets?",
-                f"**Opportunities & Next Steps**\n- Pair experimentation frameworks with AI summarization to ship insights weekly.\n- Reuse knowledge bases to keep messaging on-brand while scaling {subject} programs.\n- Align sales, product, and marketing data so every touchpoint reinforces the same answer."
-            ]
-
-            kb_lines = []
-            try:
-                kb = get_knowledge_base()
-                kb_results = kb.search(subject, limit=3)
-                for idx, doc in enumerate(kb_results or [], start=1):
-                    raw = getattr(doc, "content", "") or ""
-                    if not raw.strip():
-                        continue
-                    snippet = shorten(raw.replace("\n", " ").strip(), width=280, placeholder="...")
-                    kb_lines.append(f"- KB Insight {idx}: {snippet}")
-            except Exception as kb_exc:
-                print(f"[WARN] Could not pull knowledge-base fallback insights: {kb_exc}")
-
-            if kb_lines:
-                static_sections.append("**Knowledge Base Highlights**\n" + "\n".join(kb_lines))
-
-            return "\n\n".join(static_sections)
-
         researcher = get_researcher_agent()
-        research_response = researcher.run(f"Research key facts, statistics, and user questions about: {topic}", stream=False)
+        research_response = researcher.run(
+            f"Research key facts, statistics, and user questions about: {topic}",
+            stream=False,
+        )
         research_summary = (research_response.content or "").strip()
 
         if not _has_research_signal(research_summary):
-            print("[WARN] Research agent output looked invalid or empty. Retrying with fallback prompt...")
+            print("[WARN] Research output invalid/empty. Retrying with fallback prompt...")
             fallback_prompt = (
                 f"Provide a concise research summary for '{topic}'. "
                 "List at least five bullet points covering statistics, audience pain points, "
@@ -125,164 +105,186 @@ class AEOBlogPipeline:
         # 2. Plan
         print("\n[2/5] Planning...")
         planner = get_planner_agent()
-        plan_response = planner.run(f"Topic: '{topic}'\n\nResearch:\n{research_summary}", stream=False)
+        plan_response = planner.run(
+            f"Topic: '{topic}'\n\nResearch:\n{research_summary}", stream=False
+        )
         plan = plan_response.content
-        
+
         # 3. Write
         print("\n[3/5] Writing...")
         writer = get_writer_agent()
-        draft_response = writer.run(f"Write the blog for '{topic}' using this outline:\n\n{plan}\n\nResearch:\n{research_summary}", stream=False)
+        draft_response = writer.run(
+            f"Write the blog for '{topic}' using this outline:\n\n{plan}\n\nResearch:\n{research_summary}",
+            stream=False,
+        )
         draft = draft_response.content
-        
+
         # 4. Optimize
         print("\n[4/5] Optimizing...")
         optimizer = get_optimizer_agent()
         opt_response = optimizer.run(f"Draft:\n{draft}", stream=False)
         optimization_report = opt_response.content
-        
+
         # 5. Finalize
         print("\n[5/5] Finalizing...")
         finalizer = Agent(
             model=get_base_model(),
-            instructions=["""You are the Final Editor. Your goal is to produce the final, publish-ready markdown file.
-            1. Take the Draft and apply the improvements from the Optimization Report.
-            2. Ensure the formatting is perfect Markdown.
-            3. STRICTLY output ONLY the blog content. No \"Here is the blog\" conversation.
-            """],
-            markdown=True
+            instructions=[
+                """You are the Final Editor. Produce the final, publish-ready markdown file.
+1. Take the Draft and apply the improvements from the Optimization Report.
+2. Ensure perfect Markdown formatting.
+3. STRICTLY output ONLY the blog content — no preamble, no "Here is the blog" text."""
+            ],
+            markdown=True,
         )
-        final_response = finalizer.run(f"Draft:\n{draft}\n\nOptimization Suggestions:\n{optimization_report}\n\nProduce the Final Blog Post.", stream=False)
-        
-        # --- Capture Aggregate Token Usage ---
-        try:
-            # Agno responses contain metadata with usage information
-            responses = [research_response, plan_response, draft_response, opt_response, final_response]
-            if topic_gen_response:
-                responses.insert(0, topic_gen_response)
-                
-            for resp in responses:
-                if hasattr(resp, 'metrics') and resp.metrics:
-                    total_input_tokens += getattr(resp.metrics, "input_tokens", 0)
-                    total_output_tokens += getattr(resp.metrics, "output_tokens", 0)
-            
-            # Record a "Generation" to represent the total LLM usage for this pipeline run.
-            generation = langfuse.start_generation(
-                name="Total_Pipeline_Usage",
-                model="gemini-flash-latest",
-                input=prompt if prompt else topic,
-                output=final_response.content,
-                usage_details={
-                    "prompt_tokens": total_input_tokens,
-                    "completion_tokens": total_output_tokens,
-                    "total_tokens": total_input_tokens + total_output_tokens
-                },
-                metadata={
-                    "source": "agno-agent-aggregation",
-                    "generated_topic": topic if prompt else None
-                }
-            )
-            generation.end()
+        final_response = finalizer.run(
+            f"Draft:\n{draft}\n\nOptimization Suggestions:\n{optimization_report}\n\nProduce the Final Blog Post.",
+            stream=False,
+        )
 
-            
-        except Exception as e:
-            print(f"Note: Could not capture token usage: {e}")
+        # Langfuse token tracking (silent if not configured)
+        _track_usage(
+            name="Total_Pipeline_Usage",
+            input_text=prompt if prompt else topic,
+            output_text=final_response.content,
+            responses=[r for r in [topic_gen_response, research_response, plan_response, draft_response, opt_response, final_response] if r],
+            metadata={"source": "agno-agent-aggregation", "generated_topic": topic if prompt else None},
+        )
 
-        # If run via prompt, we might want to return the topic too, but for now return content as per signature
-        # To handle saving, the caller might need the topic. 
-        # But `run` traditionally returns content. 
-        # We will attach the topic to the final string via a property or tuple if possible?
-        # Actually, let's keep it simple: return content. The Service layer handles DB updates.
         return final_response.content
 
     def generate_topic_only(self, prompt: str) -> str:
-        """Helper to just generate a topic without running the full pipeline."""
+        """Generate a topic string from a raw prompt without running the full pipeline."""
         topic_generator = get_topic_generator_agent()
         response = topic_generator.run(f"Generate a blog topic for: {prompt}", stream=False)
         return response.content.strip()
 
-    # ----------------- Social Media Posts -----------------
-
     @observe()
-    def run_social_post(self, topic: str, platform: str):
+    def run_social_post(self, topic: str, platform: str) -> str:
         print(f"--- Starting Social Post Generation for: {topic} ({platform}) ---")
 
-        # 1. Research (Reusing the researcher from the blog flow)
+        # 1. Research
         print("\n[1/3] Researching...")
         researcher = get_researcher_agent()
         research_response = researcher.run(
-            f"Research key facts and trends about: {topic}",
-            stream=False
+            f"Research key facts and trends about: {topic}", stream=False
         )
         research_summary = research_response.content
         print(f"Research completed ({len(research_summary)} chars).")
 
-        # 2. Write Post
+        # 2. Write platform-specific post
         print(f"\n[2/3] Writing {platform} post...")
-
-        if platform.lower() == "reddit":
+        platform_lower = platform.lower()
+        if platform_lower == "reddit":
             writer = get_reddit_agent()
-        elif platform.lower() == "linkedin":
+        elif platform_lower == "linkedin":
             writer = get_linkedin_agent()
-        elif platform.lower() == "twitter":
+        elif platform_lower == "twitter":
             writer = get_twitter_agent()
         else:
             raise ValueError(f"Unsupported platform: {platform}")
 
-        # Pass the research as context to the social writer
-        prompt = (
-            f"Topic: '{topic}'\n\n"
-            f"Context/Research:\n{research_summary}"
+        draft_response = writer.run(
+            f"Topic: '{topic}'\n\nContext/Research:\n{research_summary}", stream=False
         )
-
-        draft_response = writer.run(prompt, stream=False)
         draft_content = draft_response.content
-        
-        # 3. QA & Refine
+
+        # 3. QA
         print(f"\n[3/3] QA Checking for {platform} compliance...")
         qa_agent = get_social_qa_agent()
         qa_response = qa_agent.run(
             f"Platform: {platform}\nDraft Post:\n{draft_content}\n\nReview and fix if necessary.",
-            stream=False
+            stream=False,
         )
         final_content = qa_response.content
 
-        # --- Capture Aggregate Token Usage for Social ---
-        try:
-            total_input_tokens = 0
-            total_output_tokens = 0
-            
-            responses = [research_response, draft_response, qa_response]
-            for resp in responses:
-                if hasattr(resp, 'metrics') and resp.metrics:
-                    total_input_tokens += getattr(resp.metrics, "input_tokens", 0)
-                    total_output_tokens += getattr(resp.metrics, "output_tokens", 0)
-            
-            generation = langfuse.start_generation(
-                name=f"Social_Post_Usage_{platform}",
-                model="gemini-flash-latest",
-                input=topic,
-                output=final_content,
-                usage_details={
-                    "prompt_tokens": total_input_tokens,
-                    "completion_tokens": total_output_tokens,
-                    "total_tokens": total_input_tokens + total_output_tokens
-                },
-                metadata={
-                    "source": "agno-agent-social",
-                    "platform": platform
-                }
-            )
-            generation.end()
-        except Exception as e:
-            print(f"Note: Could not capture token usage: {e}")
+        _track_usage(
+            name=f"Social_Post_Usage_{platform}",
+            input_text=topic,
+            output_text=final_content,
+            responses=[research_response, draft_response, qa_response],
+            metadata={"source": "agno-agent-social", "platform": platform},
+        )
 
         return final_content
 
-if __name__ == "__main__":
-    pipeline = AEOBlogPipeline()
-    result = pipeline.run("What Is Answer Engine Optimization?")
-    print("\n\n--- FINAL AEO BLOG CONTENT ---\n")
-    print(result)
-    
-    # Flush Langfuse traces before exiting
-    langfuse.flush()
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _has_research_signal(text: str) -> bool:
+    normalized = (text or "").strip().lower()
+    if not normalized or len(normalized) < 40:
+        return False
+    failure_markers = [
+        "cannot proceed", "research was not provided", "missing research",
+        "need the research", "no research", "rate limit", "temporarily unavailable",
+        "quota", "i apologize", "cannot write the blog", "without the research",
+        "please provide the research", "unavailable right now", "try again later",
+    ]
+    if any(marker in normalized for marker in failure_markers):
+        return False
+    signal_delimiters = ["\n-", "\n1.", "\nbullet", "\n•", "?", ". "]
+    return sum(1 for d in signal_delimiters if d in normalized) > 0
+
+
+def _structured_fallback_research(subject: str) -> str:
+    """Return a deterministic research summary when the research agent fails."""
+    sections = [
+        f"**Market Snapshot**\n- {subject} is top-of-mind for CMOs focused on profitable growth in 2026.\n"
+        f"- Economic pressure pushes teams to prove clear ROI within two quarters.",
+        f"**Adoption & Investment**\n- Budgets are shifting toward AI copilots, experimentation platforms, "
+        f"and privacy-safe data foundations that accelerate {subject}.",
+        f"**Audience Pain Points**\n- Teams struggle with fragmented data, content bottlenecks, and channel saturation.\n"
+        f"- Decision makers want faster validation and proof that {subject} drives incremental revenue.",
+        f"**People-Also-Ask Style Questions**\n- How does {subject} change day-to-day marketing workflows?\n"
+        f"- What KPIs prove success within 90 days?\n"
+        f"- How can smaller teams adopt {subject} without enterprise budgets?",
+        f"**Opportunities & Next Steps**\n- Pair experimentation frameworks with AI summarization to ship insights weekly.\n"
+        f"- Reuse knowledge bases to keep messaging on-brand while scaling {subject} programs.",
+    ]
+    try:
+        kb = get_knowledge_base()
+        kb_results = kb.search(subject, limit=3)
+        kb_lines = []
+        for idx, doc in enumerate(kb_results or [], start=1):
+            raw = getattr(doc, "content", "") or ""
+            if raw.strip():
+                snippet = shorten(raw.replace("\n", " ").strip(), width=280, placeholder="...")
+                kb_lines.append(f"- KB Insight {idx}: {snippet}")
+        if kb_lines:
+            sections.append("**Knowledge Base Highlights**\n" + "\n".join(kb_lines))
+    except Exception as kb_exc:
+        print(f"[WARN] Could not pull KB fallback insights: {kb_exc}")
+    return "\n\n".join(sections)
+
+
+def _track_usage(*, name: str, input_text: str, output_text: str, responses: list, metadata: dict) -> None:
+    """Record aggregate token usage to Langfuse. Silent no-op if Langfuse is not configured."""
+    if not langfuse:
+        return
+    try:
+        total_in = sum(
+            getattr(r.metrics, "input_tokens", 0)
+            for r in responses
+            if hasattr(r, "metrics") and r.metrics
+        )
+        total_out = sum(
+            getattr(r.metrics, "output_tokens", 0)
+            for r in responses
+            if hasattr(r, "metrics") and r.metrics
+        )
+        gen = langfuse.start_generation(
+            name=name,
+            model="gemini-flash-latest",
+            input=input_text,
+            output=output_text,
+            usage_details={
+                "prompt_tokens": total_in,
+                "completion_tokens": total_out,
+                "total_tokens": total_in + total_out,
+            },
+            metadata=metadata,
+        )
+        gen.end()
+    except Exception as exc:
+        print(f"[INFO] Could not record Langfuse usage: {exc}")

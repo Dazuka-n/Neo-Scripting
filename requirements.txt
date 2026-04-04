@@ -1,11 +1,13 @@
 agno
 qdrant-client
 openai
+google-generativeai
 pydantic
 python-dotenv
-sqlalchemy
-pg8000
-Flask
-flask-cors
 duckduckgo-search
 langfuse
+pypdf
+requests
+fastapi
+uvicorn[standard]
+httpx

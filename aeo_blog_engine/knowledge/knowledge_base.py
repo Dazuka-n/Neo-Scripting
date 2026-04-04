@@ -1,45 +1,19 @@
 import os
 from typing import Optional
-import traceback
 import requests
 
 from agno.vectordb.qdrant import Qdrant
-# from agno.knowledge.embedder.google import GeminiEmbedder # Removed
 from agno.knowledge.embedder.openai import OpenAIEmbedder
 from aeo_blog_engine.config.settings import Config
 
 EMBEDDER_PROVIDER = os.getenv("EMBEDDER_PROVIDER", "auto").lower()
 
-
-class _InMemoryKnowledge:
-    """Very small in-memory fallback to keep the pipeline running without Qdrant."""
-
-    def __init__(self):
-        docs = []
-        kb_path = os.path.join(os.path.dirname(__file__), "docs")
-        for root, _, files in os.walk(kb_path):
-            for file_name in files:
-                if file_name.endswith((".md", ".txt")):
-                    file_path = os.path.join(root, file_name)
-                    with open(file_path, "r", encoding="utf-8") as handle:
-                        docs.append(handle.read())
-        self._documents = docs
-
-    def exists(self):
-        return True
-
-    def search(self, query: str, limit: int = 3, **_):
-        class _Doc:
-            def __init__(self, text: str):
-                self.content = text
-
-        return [_Doc(text) for text in self._documents[:limit]]
-
-
 _cached_vector_db: Optional[object] = None
 
 
 class OpenAICompatEmbedder:
+    """Generic HTTP embedder for providers with an OpenAI-compatible /embeddings endpoint."""
+
     def __init__(
         self,
         *,
@@ -74,50 +48,44 @@ class OpenAICompatEmbedder:
         return data["data"][0]["embedding"]
 
 
-
-def _use_in_memory_fallback(reason: str):
-    print(f"\n[WARNING] Falling back to in-memory knowledge base.")
-    print(f"Reason: {reason}")
-    if "QDRANT_URL=:memory:" not in reason:
-        print("Detailed error traceback:")
-        traceback.print_exc()
-    return _InMemoryKnowledge()
-
-
 def get_knowledge_base():
-    """Return Qdrant vector DB, falling back to in-memory storage when necessary."""
+    """
+    Return the Qdrant vector DB instance.
+
+    Raises RuntimeError with a descriptive message if Qdrant is unreachable.
+    Qdrant is REQUIRED — there is no in-memory fallback.
+    """
     global _cached_vector_db
     if _cached_vector_db:
         return _cached_vector_db
 
-    if not Config.GEMINI_API_KEY and not Config.OPENROUTER_API_KEY and not Config.OPENAI_API_KEY:
-        raise ValueError("At least one LLM API key (Gemini, OpenRouter, or OpenAI) must be configured")
-
-    if Config.QDRANT_URL == ":memory":
-        _cached_vector_db = _use_in_memory_fallback("QDRANT_URL=:memory:")
-        return _cached_vector_db
+    embedder = _select_embedder()
 
     try:
-        embedder = _select_embedder()
-
-        _cached_vector_db = Qdrant(
+        db = Qdrant(
             collection=Config.COLLECTION_NAME,
             url=Config.QDRANT_URL,
             api_key=Config.QDRANT_API_KEY,
             embedder=embedder,
         )
-        if hasattr(_cached_vector_db, "client"):
-            _cached_vector_db.client.get_collections()
+        # Verify the connection is live
+        if hasattr(db, "client"):
+            db.client.get_collections()
+        _cached_vector_db = db
         return _cached_vector_db
     except Exception as exc:
-        _cached_vector_db = _use_in_memory_fallback(str(exc))
-        return _cached_vector_db
+        raise RuntimeError(
+            f"[Intelliwrite] Cannot connect to Qdrant at '{Config.QDRANT_URL}'.\n"
+            "Please ensure:\n"
+            "  1. Qdrant is running (docker run -p 6333:6333 qdrant/qdrant)\n"
+            "  2. QDRANT_URL and QDRANT_API_KEY are set correctly in your .env\n"
+            f"Original error: {exc}"
+        ) from exc
 
 
 def _select_embedder():
+    """Select the best available embedder based on EMBEDDER_PROVIDER and available keys."""
     preference = EMBEDDER_PROVIDER
-    provider_order = []
-
     if preference == "openrouter":
         provider_order = ["openrouter", "openai", "gemini"]
     elif preference == "gemini":
@@ -142,7 +110,7 @@ def _select_embedder():
                 dimensions=3072,
                 extra_headers={
                     "HTTP-Referer": os.getenv("OPENROUTER_APP_URL", "https://localhost"),
-                    "X-Title": os.getenv("OPENROUTER_APP_NAME", "AEO Blog Engine"),
+                    "X-Title": os.getenv("OPENROUTER_APP_NAME", "Intelliwrite"),
                 },
             )
         if provider == "gemini" and Config.GEMINI_API_KEY:
@@ -153,4 +121,7 @@ def _select_embedder():
                 dimensions=3072,
             )
 
-    raise ValueError("Unable to initialize embedder; set EMBEDDER_PROVIDER or remove unused API keys")
+    raise ValueError(
+        "[Intelliwrite] No embedder could be initialized.\n"
+        "Set at least one of: OPENAI_API_KEY, OPENROUTER_API_KEY, or GEMINI_API_KEY."
+    )
