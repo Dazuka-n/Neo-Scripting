@@ -513,7 +513,7 @@ Aggregates `input_tokens + output_tokens` across all agent responses in the full
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=120&section=footer" width="100%"/>
 
-**Built with ♥ by [Teeny Tech Trek](https://teenytechtrek.com)**
+**Built by Krishna**
 
 *Build small. Launch fast. Scale smart.*
 
