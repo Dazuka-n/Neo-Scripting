@@ -517,7 +517,4 @@ Aggregates `input_tokens + output_tokens` across all agent responses in the full
 
 *Build small. Launch fast. Scale smart.*
 
-[![Website](https://img.shields.io/badge/teenytechtrek.com-Visit-3E6AA7?style=flat-square)](https://teenytechtrek.com)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://linkedin.com)
-
 </div>
