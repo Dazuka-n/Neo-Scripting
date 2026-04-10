@@ -1,5 +1,6 @@
 import os
 from textwrap import shorten
+from typing import Callable, Optional
 
 from aeo_blog_engine.agents import (
     get_researcher_agent,
@@ -54,7 +55,7 @@ class AEOBlogPipeline:
         print("Initializing AEO Blog Pipeline with Agno Agents...")
 
     @observe()
-    def run(self, topic: str = None, prompt: str = None) -> str:
+    def run(self, topic: str = None, prompt: str = None, progress_callback: Optional[Callable[[str], None]] = None) -> str:
         if not topic and not prompt:
             raise ValueError("Either 'topic' or 'prompt' must be provided.")
 
@@ -73,6 +74,8 @@ class AEOBlogPipeline:
             )
             topic = topic_gen_response.content.strip()
             print(f"Generated Topic: {topic}")
+            if progress_callback:
+                progress_callback("topic_generator")
 
         print(f"Target Topic: {topic}")
 
@@ -102,6 +105,9 @@ class AEOBlogPipeline:
             print("[WARN] Using structured fallback research summary.")
             research_summary = _structured_fallback_research(topic)
 
+        if progress_callback:
+            progress_callback("researcher")
+
         # 2. Plan
         print("\n[2/5] Planning...")
         planner = get_planner_agent()
@@ -109,6 +115,8 @@ class AEOBlogPipeline:
             f"Topic: '{topic}'\n\nResearch:\n{research_summary}", stream=False
         )
         plan = plan_response.content
+        if progress_callback:
+            progress_callback("planner")
 
         # 3. Write
         print("\n[3/5] Writing...")
@@ -118,12 +126,16 @@ class AEOBlogPipeline:
             stream=False,
         )
         draft = draft_response.content
+        if progress_callback:
+            progress_callback("writer")
 
         # 4. Optimize
         print("\n[4/5] Optimizing...")
         optimizer = get_optimizer_agent()
         opt_response = optimizer.run(f"Draft:\n{draft}", stream=False)
         optimization_report = opt_response.content
+        if progress_callback:
+            progress_callback("optimizer")
 
         # 5. Finalize
         print("\n[5/5] Finalizing...")
@@ -141,6 +153,9 @@ class AEOBlogPipeline:
             f"Draft:\n{draft}\n\nOptimization Suggestions:\n{optimization_report}\n\nProduce the Final Blog Post.",
             stream=False,
         )
+
+        if progress_callback:
+            progress_callback("final_editor")
 
         # Langfuse token tracking (silent if not configured)
         _track_usage(
@@ -160,7 +175,7 @@ class AEOBlogPipeline:
         return response.content.strip()
 
     @observe()
-    def run_social_post(self, topic: str, platform: str) -> str:
+    def run_social_post(self, topic: str, platform: str, progress_callback: Optional[Callable[[str], None]] = None) -> str:
         print(f"--- Starting Social Post Generation for: {topic} ({platform}) ---")
 
         # 1. Research
@@ -171,6 +186,8 @@ class AEOBlogPipeline:
         )
         research_summary = research_response.content
         print(f"Research completed ({len(research_summary)} chars).")
+        if progress_callback:
+            progress_callback("social_researcher")
 
         # 2. Write platform-specific post
         print(f"\n[2/3] Writing {platform} post...")
@@ -188,6 +205,8 @@ class AEOBlogPipeline:
             f"Topic: '{topic}'\n\nContext/Research:\n{research_summary}", stream=False
         )
         draft_content = draft_response.content
+        if progress_callback:
+            progress_callback("social_writer")
 
         # 3. QA
         print(f"\n[3/3] QA Checking for {platform} compliance...")
@@ -197,6 +216,8 @@ class AEOBlogPipeline:
             stream=False,
         )
         final_content = qa_response.content
+        if progress_callback:
+            progress_callback("social_qa")
 
         _track_usage(
             name=f"Social_Post_Usage_{platform}",

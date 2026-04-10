@@ -4,6 +4,7 @@
     {
       "src": "api/index.py",
       "use": "@vercel/python",
+      "maxDuration": 300,
       "config": {
         "includeFiles": [
           "aeo_blog_engine/**",
