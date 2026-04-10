@@ -13,7 +13,9 @@ Or via Docker / Railway using the Dockerfile / railway.toml.
 """
 
 import asyncio
+import hmac
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -23,7 +25,7 @@ from mcp.server.sse import SseServerTransport
 from mcp.types import TextContent, Tool
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 from starlette.routing import Mount, Route
 
 from config import Config, check_backend_reachable, validate_config
@@ -39,6 +41,21 @@ logger = logging.getLogger("intelliwrite-mcp")
 
 # ── Config validation (fail fast before binding any port) ─────────────────────
 validate_config()
+
+# ── Shared-secret authentication ─────────────────────────────────────────────
+# Set MCP_SECRET as a Railway env var and in the Claude.ai connector header config:
+#   In Claude.ai connector settings → Headers → add: X-MCP-Secret: <your-secret>
+MCP_SECRET = os.environ.get("MCP_SECRET", "")
+
+
+def _verify_secret(request: Request) -> Response | None:
+    """Return a 401 Response if the request fails auth, or None if it passes."""
+    if not MCP_SECRET:
+        return None  # dev mode — no secret configured
+    token = request.headers.get("X-MCP-Secret", "")
+    if not hmac.compare_digest(token, MCP_SECRET):
+        return Response("Unauthorized", status_code=401)
+    return None
 
 # ── MCP server instance ───────────────────────────────────────────────────────
 mcp_server = Server(name="intelliwrite", version="1.0.0")
@@ -78,6 +95,11 @@ async def sse_endpoint(request: Request) -> None:
     GET /sse — Clients connect here to open an SSE stream.
     Each connection runs a full MCP server session.
     """
+    denied = _verify_secret(request)
+    if denied:
+        await denied(request.scope, request.receive, request._send)
+        return
+
     async with sse_transport.connect_sse(
         request.scope, request.receive, request._send
     ) as (read_stream, write_stream):
@@ -113,6 +135,10 @@ async def lifespan(_app: Starlette):
     logger.info("SSE endpoint: GET  /sse")
     logger.info("Messages:     POST /messages")
     logger.info("Health:       GET  /health")
+    if not MCP_SECRET:
+        logger.warning("MCP_SECRET not set — server is unauthenticated. Set this in production.")
+    else:
+        logger.info("Authentication enabled (X-MCP-Secret header required)")
     await check_backend_reachable()
     logger.info("MCP server ready -- waiting for client connections.")
     yield

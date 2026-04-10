@@ -1,26 +1,48 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Copy, Check } from 'lucide-react'
 import MarkdownViewer from '../components/MarkdownViewer'
 import SocialPostCard from '../components/SocialPostCard'
 
+const STORAGE_KEY = 'intelliwrite_last_result'
+
 export default function Result() {
   const navigate = useNavigate()
+  const { state } = useLocation()
   const [result, setResult] = useState(null)
   const [mdCopied, setMdCopied] = useState(false)
 
   useEffect(() => {
-    const raw = localStorage.getItem('intelliwrite_result')
-    if (!raw) {
-      navigate('/')
+    // Priority: React Router state → sessionStorage → localStorage (legacy)
+    if (state) {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+      setResult(state)
       return
     }
-    try {
-      setResult(JSON.parse(raw))
-    } catch {
-      navigate('/')
+
+    const session = sessionStorage.getItem(STORAGE_KEY)
+    if (session) {
+      try {
+        setResult(JSON.parse(session))
+        return
+      } catch {
+        sessionStorage.removeItem(STORAGE_KEY)
+      }
     }
-  }, [navigate])
+
+    // Legacy fallback: check localStorage from old flow
+    const legacy = localStorage.getItem('intelliwrite_result')
+    if (legacy) {
+      try {
+        const parsed = JSON.parse(legacy)
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+        setResult(parsed)
+        return
+      } catch {
+        localStorage.removeItem('intelliwrite_result')
+      }
+    }
+  }, [state])
 
   const handleCopyMarkdown = async () => {
     if (!result?.blog_markdown) return
@@ -38,7 +60,21 @@ export default function Result() {
     navigate('/')
   }
 
-  if (!result) return null
+  if (!result) {
+    return (
+      <div className="min-h-screen bg-bg-base flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-white/60 text-lg mb-4">No result found.</p>
+          <a
+            href="/"
+            className="text-violet-400 hover:text-violet-300 underline text-sm"
+          >
+            Generate new content
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   const socialPosts = result.social_posts || {}
   const platformOrder = ['linkedin', 'twitter', 'reddit']

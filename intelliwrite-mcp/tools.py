@@ -67,23 +67,22 @@ TOOL_DEFINITIONS = [
         "name": "ingest_document",
         "description": (
             "Ingest a document into the Intelliwrite Qdrant knowledge base. "
+            "Pass a public HTTPS URL to a .md, .txt, or .pdf file. "
             "Once ingested, the document becomes part of the RAG context used "
-            "by the researcher agent when generating future articles. "
-            "Supports .md, .txt, and .pdf files."
+            "by the researcher agent when generating future articles."
         ),
         "inputSchema": {
             "type": "object",
             "properties": {
-                "file_path": {
+                "file_url": {
                     "type": "string",
                     "description": (
-                        "Absolute path to the file to ingest (.md, .txt, or .pdf). "
-                        "The file must be accessible on the server where the FastAPI "
-                        "backend is running."
+                        "Public HTTPS URL of the document to ingest (.md, .txt, or .pdf). "
+                        "Examples: GitHub raw URLs, Google Drive share links, S3 pre-signed URLs."
                     ),
                 },
             },
-            "required": ["file_path"],
+            "required": ["file_url"],
         },
     },
     {
@@ -167,18 +166,41 @@ async def handle_generate_blog(arguments: dict[str, Any]) -> str:
 
 
 async def handle_ingest_document(arguments: dict[str, Any]) -> str:
-    """POST /ingest and return a confirmation message."""
-    file_path = arguments.get("file_path", "")
-    payload = {"file_path": file_path}
+    """Download a file from a public URL and POST it as multipart upload to /ingest."""
+    file_url = arguments.get("file_url", "")
+    if not file_url:
+        return "✗ Missing required parameter: file_url"
 
-    url = f"{Config.API_BASE_URL}/ingest"
-    logger.info("Calling POST %s (file_path=%r)", url, file_path)
+    # Infer filename and content type from the URL
+    url_path = file_url.rstrip("/").split("?")[0]
+    filename = url_path.split("/")[-1] or "document.txt"
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    content_type_map = {"md": "text/plain", "txt": "text/plain", "pdf": "application/pdf"}
+    content_type = content_type_map.get(ext, "text/plain")
+
+    logger.info("Downloading %s (filename=%r, type=%s)", file_url, filename, content_type)
+
+    # Step 1: Download the file from the URL
+    try:
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            download_resp = await client.get(file_url)
+            download_resp.raise_for_status()
+            file_bytes = download_resp.content
+    except Exception as exc:
+        return f"✗ Could not download file from URL: {file_url}\nDetail: {exc}"
+
+    # Step 2: Upload as multipart to the backend /ingest endpoint
+    ingest_url = f"{Config.API_BASE_URL}/ingest"
+    logger.info("Uploading to POST %s (%d bytes)", ingest_url, len(file_bytes))
 
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(
+                ingest_url,
+                files={"file": (filename, file_bytes, content_type)},
+            )
     except httpx.TimeoutException:
-        return f"✗ Request timed out after 60 seconds while ingesting: {file_path}"
+        return f"✗ Request timed out after 60 seconds while ingesting: {file_url}"
     except httpx.ConnectError:
         return (
             f"✗ Cannot connect to backend at {Config.API_BASE_URL}.\n"
@@ -190,7 +212,7 @@ async def handle_ingest_document(arguments: dict[str, Any]) -> str:
 
     data = resp.json()
     message = data.get("message", "Ingestion complete.")
-    return f"✓ Document ingested successfully: {file_path}\n{message}"
+    return f"✓ Document ingested successfully: {file_url}\n{message}"
 
 
 async def handle_check_backend_health(_arguments: dict[str, Any]) -> str:

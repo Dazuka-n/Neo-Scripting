@@ -15,6 +15,7 @@ export default function GeneratorForm() {
   const [selectedPlatforms, setSelectedPlatforms] = useState(['LinkedIn'])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [controller, setController] = useState(null)
 
   const togglePlatform = (platform) => {
     setSelectedPlatforms((prev) =>
@@ -30,6 +31,11 @@ export default function GeneratorForm() {
     e.preventDefault()
     setError(null)
     setLoading(true)
+    sessionStorage.removeItem('intelliwrite_last_result')
+
+    const ac = new AbortController()
+    setController(ac)
+    const timeoutId = setTimeout(() => ac.abort(), 120_000)
 
     try {
       const response = await fetch(`${API_URL}/generate`, {
@@ -41,6 +47,7 @@ export default function GeneratorForm() {
           company_url: companyUrl,
           platforms: selectedPlatforms.map((p) => p.toLowerCase()),
         }),
+        signal: ac.signal,
       })
 
       if (!response.ok) {
@@ -49,10 +56,17 @@ export default function GeneratorForm() {
 
       const data = await response.json()
       localStorage.setItem('intelliwrite_result', JSON.stringify(data))
-      navigate('/result')
+      sessionStorage.setItem('intelliwrite_last_result', JSON.stringify(data))
+      navigate('/result', { state: data })
     } catch (err) {
-      setError('Generation failed. Check your inputs or try again.')
+      if (err.name === 'AbortError') {
+        setError('Request was cancelled or timed out. Please try again.')
+      } else {
+        setError('Generation failed. Check your inputs or try again.')
+      }
     } finally {
+      clearTimeout(timeoutId)
+      setController(null)
       setLoading(false)
     }
   }
@@ -189,6 +203,16 @@ export default function GeneratorForm() {
             </button>
 
             <StepTracker active={loading} />
+
+            {loading && controller && (
+              <button
+                onClick={() => controller.abort()}
+                type="button"
+                className="mt-3 w-full py-3 rounded-xl text-sm font-medium border border-white/20 text-white/50 hover:text-white hover:border-red-500/50 hover:bg-red-500/10 transition-all duration-200"
+              >
+                Cancel
+              </button>
+            )}
           </div>
 
           {/* Error */}

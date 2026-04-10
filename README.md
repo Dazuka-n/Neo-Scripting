@@ -311,12 +311,12 @@ npm run dev
 
 ### 5️⃣ MCP Server (Optional — for AI client integration)
 
+Copy `intelliwrite-mcp/.env.example` to `intelliwrite-mcp/.env` and fill in your values.
+
 ```bash
 cd intelliwrite-mcp
+cp .env.example .env
 pip install -r requirements.txt
-
-# Set API_BASE_URL to your running backend
-echo "API_BASE_URL=http://localhost:8000" > .env
 
 uvicorn server:starlette_app --host 0.0.0.0 --port 8080
 ```
@@ -329,6 +329,19 @@ docker run -e API_BASE_URL=http://localhost:8000 -p 8080:8080 intelliwrite-mcp
 ```
 
 ✅ MCP server ready at `http://localhost:8080/sse`
+
+#### Railway Deployment
+
+**Start command:** `uvicorn server:starlette_app --host 0.0.0.0 --port $PORT`
+
+| Variable | Required | Notes |
+|---|---|---|
+| `API_BASE_URL` | Yes | Your Vercel backend URL (no trailing slash) |
+| `PORT` | No | Injected automatically by Railway |
+| `MCP_SECRET` | Yes (production) | Shared secret for `X-MCP-Secret` header auth |
+| `LOG_LEVEL` | No | Default: `info` |
+
+> `railway.toml` already has the explicit `startCommand` and health check config.
 
 ---
 
