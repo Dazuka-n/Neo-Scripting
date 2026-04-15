@@ -38,10 +38,10 @@ frontend/dist/
 frontend/node_modules/
 
 # ── MCP Server ────────────────────────────────────
-intelliwrite-mcp/.env
-intelliwrite-mcp/__pycache__/
-intelliwrite-mcp/.venv/
-intelliwrite-mcp/node_modules/
+neo-scripting-mcp/.env
+neo-scripting-mcp/__pycache__/
+neo-scripting-mcp/.venv/
+neo-scripting-mcp/node_modules/
 
 # ── Databases & Vector stores ─────────────────────
 *.db

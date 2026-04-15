@@ -57,7 +57,7 @@ export default function Navbar() {
     >
       <nav className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <a href="/" className="flex items-center gap-2 group" aria-label="Intelliwrite home">
+        <a href="/" className="flex items-center gap-2 group" aria-label="Neo Scripting home">
           <SparkleIcon />
           <span className="text-base font-bold tracking-tight leading-none">
             <span className="text-white">Intelli</span>

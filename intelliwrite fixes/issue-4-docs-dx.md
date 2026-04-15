@@ -1,7 +1,7 @@
 # [DOCS] Documentation & DX — 3 Issues Causing Contributor Friction
 
 **Labels:** `documentation` `dx` `good-first-issue`  
-**Affected files:** `README.md`, `.env.example`, `main.py`, `intelliwrite-mcp/railway.toml`
+**Affected files:** `README.md`, `.env.example`, `main.py`, `neo-scripting-mcp/railway.toml`
 
 ## Overview
 
@@ -9,19 +9,19 @@ Three documentation gaps slow down contributors and cause silent failures in pro
 
 | # | Problem | Severity |
 |---|---------|----------|
-| 1 | Missing `intelliwrite-mcp/.env.example` — silent Railway deploy failures | ℹ️ Info |
+| 1 | Missing `neo-scripting-mcp/.env.example` — silent Railway deploy failures | ℹ️ Info |
 | 2 | Railway start command undocumented in README and `railway.toml` | ℹ️ Info |
 | 3 | No input validation on `platforms` field in `POST /generate` | ℹ️ Info |
 
 ---
 
-## Problem 1 — Missing `intelliwrite-mcp/.env.example`
+## Problem 1 — Missing `neo-scripting-mcp/.env.example`
 
-**Files:** `intelliwrite-mcp/` (missing `.env.example`)
+**Files:** `neo-scripting-mcp/` (missing `.env.example`)
 
 ### Description
 
-The root `.env.example` only covers FastAPI backend variables. The `intelliwrite-mcp/` directory has no `.env.example`. A contributor deploying the MCP server to Railway for the first time has no authoritative list of required env vars and will only discover missing values at runtime — when the server silently fails to connect to the backend API or listens on the wrong port.
+The root `.env.example` only covers FastAPI backend variables. The `neo-scripting-mcp/` directory has no `.env.example`. A contributor deploying the MCP server to Railway for the first time has no authoritative list of required env vars and will only discover missing values at runtime — when the server silently fails to connect to the backend API or listens on the wrong port.
 
 **What is currently missing:**
 
@@ -34,10 +34,10 @@ The root `.env.example` only covers FastAPI backend variables. The `intelliwrite
 
 ### Fix
 
-Create `intelliwrite-mcp/.env.example`:
+Create `neo-scripting-mcp/.env.example`:
 
 ```env
-# intelliwrite-mcp/.env.example
+# neo-scripting-mcp/.env.example
 
 # Required — URL of the running FastAPI backend
 API_BASE_URL=http://localhost:8000
@@ -58,7 +58,7 @@ Also update README.md Step 5 (MCP Server setup) to reference this file explicitl
 
 ## Problem 2 — Railway Start Command Not Documented
 
-**Files:** `README.md`, `intelliwrite-mcp/railway.toml`
+**Files:** `README.md`, `neo-scripting-mcp/railway.toml`
 
 ### Description
 
@@ -79,7 +79,7 @@ The README says "deploy on Railway (Docker)" but does not show the start command
 ### Fix — Verify `railway.toml` has an explicit start command
 
 ```toml
-# intelliwrite-mcp/railway.toml
+# neo-scripting-mcp/railway.toml
 [deploy]
 startCommand = "uvicorn server:starlette_app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
@@ -128,7 +128,7 @@ With this fix, an invalid platform name returns `HTTP 422 Unprocessable Entity` 
 
 ## Acceptance Criteria
 
-- [ ] `intelliwrite-mcp/.env.example` exists and documents all MCP server env vars with inline comments
+- [ ] `neo-scripting-mcp/.env.example` exists and documents all MCP server env vars with inline comments
 - [ ] README.md Step 5 references the `.env.example` and shows the exact Railway start command
 - [ ] `railway.toml` has an explicit `startCommand` matching the README docs
 - [ ] `POST /generate` with `platforms: ["instagram"]` returns `HTTP 422` with a Pydantic validation error

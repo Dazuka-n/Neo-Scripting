@@ -1,11 +1,11 @@
 # [BUG] MCP Server — 3 Issues Blocking Claude.ai Integration
 
 **Labels:** `bug` `mcp` `critical` `help-wanted`  
-**Affected files:** `intelliwrite-mcp/server.py`, `intelliwrite-mcp/tools.py`
+**Affected files:** `neo-scripting-mcp/server.py`, `neo-scripting-mcp/tools.py`
 
 ## Overview
 
-The MCP server deployed on Railway has three bugs that prevent Claude.ai from discovering and safely using IntelliWrite tools via the connector tab. All three must be resolved for the MCP integration to work end-to-end.
+The MCP server deployed on Railway has three bugs that prevent Claude.ai from discovering and safely using Neo Scripting tools via the connector tab. All three must be resolved for the MCP integration to work end-to-end.
 
 | # | Problem | Severity |
 |---|---------|----------|
@@ -17,7 +17,7 @@ The MCP server deployed on Railway has three bugs that prevent Claude.ai from di
 
 ## Problem 1 — SSE Handshake Not Completing
 
-**File:** `intelliwrite-mcp/server.py`
+**File:** `neo-scripting-mcp/server.py`
 
 ### Description
 
@@ -26,7 +26,7 @@ When Claude.ai adds the MCP connector tab and opens the SSE connection, it immed
 ### Steps to Reproduce
 
 1. Add the Railway MCP URL as a connector in Claude.ai settings
-2. Open a conversation — no IntelliWrite tools appear in the tool list
+2. Open a conversation — no Neo Scripting tools appear in the tool list
 3. Run the curl test below — the SSE stream hangs with no initial data event
 
 ```bash
@@ -50,7 +50,7 @@ Use the MCP Python SDK (`mcp>=1.0.0`) which provides a built-in `SSEServerTransp
 
 ## Problem 2 — No Authentication on MCP Server
 
-**File:** `intelliwrite-mcp/server.py`
+**File:** `neo-scripting-mcp/server.py`
 
 ### Description
 
@@ -64,7 +64,7 @@ The MCP server proxies all tool calls to the FastAPI backend with no token, API 
 ### Proposed Fix
 
 ```python
-# intelliwrite-mcp/server.py
+# neo-scripting-mcp/server.py
 import os, hmac
 MCP_SECRET = os.environ.get("MCP_SECRET", "")
 
@@ -80,7 +80,7 @@ Add `MCP_SECRET=<shared-random-hex>` to Railway environment variables and to the
 
 ## Problem 3 — `ingest_document` Passes Local File Path; Unusable from Remote Client
 
-**File:** `intelliwrite-mcp/tools.py`
+**File:** `neo-scripting-mcp/tools.py`
 
 ### Description
 

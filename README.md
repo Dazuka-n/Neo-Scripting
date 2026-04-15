@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Intelliwrite&fontSize=72&fontColor=ffffff&fontAlignY=40&desc=AEO%20%2F%20GEO%20Content%20Generation%20Engine&descAlignY=62&descSize=20&animation=fadeIn" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=220&section=header&text=Neo Scripting&fontSize=72&fontColor=ffffff&fontAlignY=40&desc=AEO%20%2F%20GEO%20Content%20Generation%20Engine&descAlignY=62&descSize=20&animation=fadeIn" width="100%"/>
 
 </div>
 
@@ -27,14 +27,14 @@
 
 ---
 
-## 🧠 What is Intelliwrite?
+## 🧠 What is Neo Scripting?
 
-**Intelliwrite** is a multi-agent AI content engine built for the era of generative search. Drop in a raw topic prompt — get back a fully structured, **AEO/GEO-optimized** blog post in Markdown and platform-specific social posts for **LinkedIn, Twitter, and Reddit**, all in one API call.
+**Neo Scripting** is a multi-agent AI content engine built for the era of generative search. Drop in a raw topic prompt — get back a fully structured, **AEO/GEO-optimized** blog post in Markdown and platform-specific social posts for **LinkedIn, Twitter, and Reddit**, all in one API call.
 
 > **AEO** (Answer Engine Optimization) = content structured to be surfaced in Google AI Overviews, featured snippets, and voice search.
 > **GEO** (Generative Engine Optimization) = content formatted to be cited and referenced by LLMs like ChatGPT and Gemini.
 
-Intelliwrite is not a wrapper around a single LLM. It's a **10-agent pipeline** with vector-backed knowledge retrieval, live web research, platform-aware social writers, and a built-in QA layer — all exposed over a clean REST API and an MCP server for AI client integration.
+Neo Scripting is not a wrapper around a single LLM. It's a **10-agent pipeline** with vector-backed knowledge retrieval, live web research, platform-aware social writers, and a built-in QA layer — all exposed over a clean REST API and an MCP server for AI client integration.
 
 ---
 
@@ -85,7 +85,7 @@ flowchart TD
     SP --> OUT
     OUT[📦 Response\nblog_markdown + social_posts]
 
-    API2([🤖 AI Client\nClaude · Cursor]) -->|SSE| MCP[intelliwrite-mcp\nStarlette SSE Server]
+    API2([🤖 AI Client\nClaude · Cursor]) -->|SSE| MCP[neo-scripting-mcp\nStarlette SSE Server]
     MCP -->|HTTP| API
 
     subgraph KB [🧠 Knowledge Base — Qdrant]
@@ -133,7 +133,7 @@ flowchart TD
 ## 🗂️ Project Structure
 
 ```
-Intelliwrite/
+Neo Scripting/
 ├── main.py                          ← FastAPI entry point
 ├── requirements.txt
 ├── vercel.json                      ← Serverless deployment config
@@ -168,7 +168,7 @@ Intelliwrite/
 │           ├── MarkdownViewer.jsx   ← Blog markdown renderer
 │           └── SocialPostCard.jsx
 │
-└── intelliwrite-mcp/                ← MCP server
+└── neo-scripting-mcp/                ← MCP server
     ├── server.py                    ← Starlette SSE server
     ├── tools.py                     ← 3 MCP tool handlers
     ├── Dockerfile
@@ -249,8 +249,8 @@ docker run -d -p 6333:6333 qdrant/qdrant
 ### 2️⃣ Clone & Configure
 
 ```bash
-git clone https://github.com/your-org/intelliwrite.git
-cd Intelliwrite
+git clone https://github.com/your-org/neo-scripting.git
+cd Neo Scripting
 
 cp .env.example .env
 ```
@@ -311,10 +311,10 @@ npm run dev
 
 ### 5️⃣ MCP Server (Optional — for AI client integration)
 
-Copy `intelliwrite-mcp/.env.example` to `intelliwrite-mcp/.env` and fill in your values.
+Copy `neo-scripting-mcp/.env.example` to `neo-scripting-mcp/.env` and fill in your values.
 
 ```bash
-cd intelliwrite-mcp
+cd neo-scripting-mcp
 cp .env.example .env
 pip install -r requirements.txt
 
@@ -324,8 +324,8 @@ uvicorn server:starlette_app --host 0.0.0.0 --port 8080
 Or via Docker:
 
 ```bash
-docker build -t intelliwrite-mcp .
-docker run -e API_BASE_URL=http://localhost:8000 -p 8080:8080 intelliwrite-mcp
+docker build -t neo-scripting-mcp .
+docker run -e API_BASE_URL=http://localhost:8000 -p 8080:8080 neo-scripting-mcp
 ```
 
 ✅ MCP server ready at `http://localhost:8080/sse`

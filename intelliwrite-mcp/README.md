@@ -1,6 +1,6 @@
-# Intelliwrite MCP Server
+# Neo Scripting MCP Server
 
-A standalone [Model Context Protocol](https://modelcontextprotocol.io) server that wraps the Intelliwrite FastAPI backend and exposes its AEO blog generation capabilities as MCP tools. Any MCP-compatible agent — Claude Desktop, Claude Code, Cursor, Windsurf — can connect to this server over HTTP/SSE and call the tools directly, without writing a single line of integration code.
+A standalone [Model Context Protocol](https://modelcontextprotocol.io) server that wraps the Neo Scripting FastAPI backend and exposes its AEO blog generation capabilities as MCP tools. Any MCP-compatible agent — Claude Desktop, Claude Code, Cursor, Windsurf — can connect to this server over HTTP/SSE and call the tools directly, without writing a single line of integration code.
 
 ---
 
@@ -17,7 +17,7 @@ A standalone [Model Context Protocol](https://modelcontextprotocol.io) server th
 ## Prerequisites
 
 - Python 3.10+
-- The Intelliwrite FastAPI backend running (see the main project)
+- The Neo Scripting FastAPI backend running (see the main project)
 - Your backend URL (local: `http://localhost:8000`, or deployed URL)
 
 ---
@@ -64,7 +64,7 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "intelliwrite": {
+    "neo-scripting": {
       "type": "sse",
       "url": "http://localhost:8080/sse"
     }
@@ -79,7 +79,7 @@ Restart Claude Desktop after saving.
 ### Claude Code
 
 ```bash
-claude mcp add intelliwrite --transport sse http://localhost:8080/sse
+claude mcp add neo-scripting --transport sse http://localhost:8080/sse
 ```
 
 Verify it was added:
@@ -94,7 +94,7 @@ claude mcp list
 
 1. Open **Settings** → **Features** → **MCP**
 2. Click **Add New MCP Server**
-3. Set **Name**: `intelliwrite`
+3. Set **Name**: `neo-scripting`
 4. Set **Type**: `SSE`
 5. Set **URL**: `http://localhost:8080/sse`
 6. Save and restart Cursor
@@ -108,7 +108,7 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
-    "intelliwrite": {
+    "neo-scripting": {
       "serverUrl": "http://localhost:8080/sse"
     }
   }
@@ -128,7 +128,7 @@ Generate a blog about AI automation in logistics for my brand at mycompany.com
 ```
 
 ```
-Check if the Intelliwrite backend is online
+Check if the Neo Scripting backend is online
 ```
 
 ```
@@ -159,7 +159,7 @@ https://your-project.up.railway.app/sse
 ## Project Structure
 
 ```
-intelliwrite-mcp/
+neo-scripting-mcp/
 ├── server.py        ← Starlette app + MCP server + SSE transport wiring
 ├── tools.py         ← Tool definitions (schemas) and async handlers
 ├── config.py        ← Env var loading, validation, backend health probe

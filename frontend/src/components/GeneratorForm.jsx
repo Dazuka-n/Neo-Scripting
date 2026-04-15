@@ -31,7 +31,7 @@ export default function GeneratorForm() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    sessionStorage.removeItem('intelliwrite_last_result')
+    sessionStorage.removeItem('neo_scripting_last_result')
 
     const ac = new AbortController()
     setController(ac)
@@ -55,8 +55,8 @@ export default function GeneratorForm() {
       }
 
       const data = await response.json()
-      localStorage.setItem('intelliwrite_result', JSON.stringify(data))
-      sessionStorage.setItem('intelliwrite_last_result', JSON.stringify(data))
+      localStorage.setItem('neo_scripting_result', JSON.stringify(data))
+      sessionStorage.setItem('neo_scripting_last_result', JSON.stringify(data))
       navigate('/result', { state: data })
     } catch (err) {
       if (err.name === 'AbortError') {

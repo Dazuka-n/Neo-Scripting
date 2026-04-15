@@ -205,7 +205,7 @@ def validate_config() -> None:
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise EnvironmentError(
-            f"\n[Intelliwrite] Startup failed — missing required environment variables:\n"
+            f"\n[Neo Scripting] Startup failed — missing required environment variables:\n"
             + "\n".join(f"  - {name}" for name in missing)
             + "\n\nSet them in your .env file. See .env.example for reference."
         )

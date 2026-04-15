@@ -9,9 +9,9 @@ const CLIENTS = [
     language: 'json',
     code: `{
   "mcpServers": {
-    "intelliwrite": {
+    "neo-scripting": {
       "type": "sse",
-      "url": "https://intelliwrite-mcp.onrender.com/sse"
+      "url": "https://neo-scripting-mcp.onrender.com/sse"
     }
   }
 }`,
@@ -21,7 +21,7 @@ const CLIENTS = [
     label: 'Claude Code',
     description: 'Run this command in your terminal',
     language: 'shell',
-    code: `claude mcp add intelliwrite --transport sse https://intelliwrite-mcp.onrender.com/sse`,
+    code: `claude mcp add neo-scripting --transport sse https://neo-scripting-mcp.onrender.com/sse`,
   },
   {
     id: 'cursor',
@@ -30,8 +30,8 @@ const CLIENTS = [
     language: 'json',
     code: `{
   "mcpServers": {
-    "intelliwrite": {
-      "url": "https://intelliwrite-mcp.onrender.com/sse",
+    "neo-scripting": {
+      "url": "https://neo-scripting-mcp.onrender.com/sse",
       "type": "sse"
     }
   }
@@ -44,8 +44,8 @@ const CLIENTS = [
     language: 'json',
     code: `{
   "mcpServers": {
-    "intelliwrite": {
-      "serverUrl": "https://intelliwrite-mcp.onrender.com/sse"
+    "neo-scripting": {
+      "serverUrl": "https://neo-scripting-mcp.onrender.com/sse"
     }
   }
 }`,

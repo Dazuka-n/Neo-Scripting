@@ -90,7 +90,7 @@ Additionally, use `AsyncQdrantClient` for Qdrant queries where Agno exposes asyn
 
 ### Description
 
-The React SPA is hosted at `https://intelliwrite-neon.vercel.app` and makes `POST` requests to the FastAPI backend (a separate Vercel deployment). If `CORSMiddleware` is absent or misconfigured, the browser blocks all cross-origin requests with a CORS policy error — appearing as a generic network failure in the UI with no useful message. The API returns `200` on a direct `curl` hit while being completely broken to the frontend.
+The React SPA is hosted at `https://neo-scripting-neon.vercel.app` and makes `POST` requests to the FastAPI backend (a separate Vercel deployment). If `CORSMiddleware` is absent or misconfigured, the browser blocks all cross-origin requests with a CORS policy error — appearing as a generic network failure in the UI with no useful message. The API returns `200` on a direct `curl` hit while being completely broken to the frontend.
 
 ### How to Diagnose
 
@@ -106,7 +106,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://intelliwrite-neon.vercel.app",
+        "https://neo-scripting-neon.vercel.app",
         "http://localhost:5173",  # local dev
     ],
     allow_methods=["GET", "POST", "OPTIONS"],

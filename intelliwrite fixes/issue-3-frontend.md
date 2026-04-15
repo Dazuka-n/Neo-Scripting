@@ -39,7 +39,7 @@ Persist the result to `sessionStorage` on arrival and restore it on mount:
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router-dom"
 
-const STORAGE_KEY = "intelliwrite_last_result"
+const STORAGE_KEY = "neo_scripting_last_result"
 
 export default function Result() {
   const { state } = useLocation()

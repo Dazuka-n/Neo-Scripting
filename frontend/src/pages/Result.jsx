@@ -4,7 +4,7 @@ import { ArrowLeft, Copy, Check } from 'lucide-react'
 import MarkdownViewer from '../components/MarkdownViewer'
 import SocialPostCard from '../components/SocialPostCard'
 
-const STORAGE_KEY = 'intelliwrite_last_result'
+const STORAGE_KEY = 'neo_scripting_last_result'
 
 export default function Result() {
   const navigate = useNavigate()
@@ -31,7 +31,7 @@ export default function Result() {
     }
 
     // Legacy fallback: check localStorage from old flow
-    const legacy = localStorage.getItem('intelliwrite_result')
+    const legacy = localStorage.getItem('neo_scripting_result')
     if (legacy) {
       try {
         const parsed = JSON.parse(legacy)
@@ -39,7 +39,7 @@ export default function Result() {
         setResult(parsed)
         return
       } catch {
-        localStorage.removeItem('intelliwrite_result')
+        localStorage.removeItem('neo_scripting_result')
       }
     }
   }, [state])
@@ -56,7 +56,7 @@ export default function Result() {
   }
 
   const handleGenerateAnother = () => {
-    localStorage.removeItem('intelliwrite_result')
+    localStorage.removeItem('neo_scripting_result')
     navigate('/')
   }
 

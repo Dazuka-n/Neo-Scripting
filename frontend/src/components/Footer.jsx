@@ -7,14 +7,14 @@ export default function Footer() {
       <footer className="py-6 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-sm text-white/30">
-            Intelliwrite by Krishna ·{' '}
+            Neo Scripting by Krishna ·{' '}
             <a
-              href="https://intelliwrite-neon.vercel.app"
+              href="https://neo-scripting-neon.vercel.app"
               target="_blank"
               rel="noreferrer"
               className="text-violet-400/60 hover:text-violet-400 transition-colors"
             >
-              intelliwrite-neon.vercel.app
+              neo-scripting-neon.vercel.app
             </a>
           </span>
 

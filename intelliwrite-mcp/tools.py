@@ -1,5 +1,5 @@
 """
-tools.py — MCP tool definitions and handlers for Intelliwrite.
+tools.py — MCP tool definitions and handlers for Neo Scripting.
 
 Three tools are exposed:
   1. generate_blog        — Run the full AEO blog + social pipeline
@@ -24,7 +24,7 @@ TOOL_DEFINITIONS = [
         "name": "generate_blog",
         "description": (
             "Generate a fully AEO/GEO-optimized blog article and social media posts "
-            "using the Intelliwrite multi-agent pipeline. The pipeline runs 6 agents: "
+            "using the Neo Scripting multi-agent pipeline. The pipeline runs 6 agents: "
             "topic structuring, research (Qdrant KB + DuckDuckGo), outline planning, "
             "writing, AEO optimization, and QA. Returns the full blog in markdown and "
             "social posts for selected platforms."
@@ -66,7 +66,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "ingest_document",
         "description": (
-            "Ingest a document into the Intelliwrite Qdrant knowledge base. "
+            "Ingest a document into the Neo Scripting Qdrant knowledge base. "
             "Pass a public HTTPS URL to a .md, .txt, or .pdf file. "
             "Once ingested, the document becomes part of the RAG context used "
             "by the researcher agent when generating future articles."
@@ -88,7 +88,7 @@ TOOL_DEFINITIONS = [
     {
         "name": "check_backend_health",
         "description": (
-            "Check the health status of the Intelliwrite backend API and its "
+            "Check the health status of the Neo Scripting backend API and its "
             "connected services (Qdrant vector database). Use this to verify "
             "the service is online before running a generation job."
         ),
@@ -145,7 +145,7 @@ async def handle_generate_blog(arguments: dict[str, Any]) -> str:
 
     lines = [
         "═══════════════════════════════════",
-        "INTELLIWRITE — GENERATED ARTICLE",
+        "NEO SCRIPTING — GENERATED ARTICLE",
         "═══════════════════════════════════",
         "",
         blog_markdown,
@@ -242,7 +242,7 @@ async def handle_check_backend_health(_arguments: dict[str, Any]) -> str:
     qdrant_status = "✓ Connected" if qdrant_raw == "connected" else f"✗ {qdrant_raw}"
 
     return "\n".join([
-        "Intelliwrite Backend Health",
+        "Neo Scripting Backend Health",
         "──────────────────────────",
         f"API Status:    {api_status}",
         f"Qdrant Status: {qdrant_status}",

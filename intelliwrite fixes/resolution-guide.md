@@ -1,4 +1,4 @@
-# Intelliwrite — Full Resolution Guide
+# Neo Scripting — Full Resolution Guide
 ### Approach, Solution & Claude Code Prompts for Every Issue
 
 ---
@@ -30,7 +30,7 @@ The current `server.py` uses raw Starlette SSE and manually constructs event str
 
 ### Solution
 
-1. Add `mcp>=1.0.0` to `intelliwrite-mcp/requirements.txt`
+1. Add `mcp>=1.0.0` to `neo-scripting-mcp/requirements.txt`
 2. Rewrite `server.py` to use `mcp.server.fastmcp.FastMCP` or `mcp.server.Server` with `SSEServerTransport`
 3. Register the three tools (`generate_blog`, `ingest_document`, `check_backend_health`) using the SDK's `@mcp.tool()` decorator
 4. Keep all HTTP proxy logic in `tools.py` — only the transport layer changes in `server.py`
@@ -39,7 +39,7 @@ The current `server.py` uses raw Starlette SSE and manually constructs event str
 ### Claude Code Prompt
 
 ```
-I need you to fix the MCP server in the `intelliwrite-mcp/` directory so that Claude.ai
+I need you to fix the MCP server in the `neo-scripting-mcp/` directory so that Claude.ai
 can discover its tools via the SSE connector tab.
 
 CONTEXT
@@ -50,13 +50,13 @@ CONTEXT
 - The server runs on Railway via Docker; start command is: uvicorn server:starlette_app --host 0.0.0.0 --port $PORT
 
 TASK
-1. Read the current intelliwrite-mcp/server.py and intelliwrite-mcp/tools.py in full
-2. Add `mcp>=1.0.0` to intelliwrite-mcp/requirements.txt
+1. Read the current neo-scripting-mcp/server.py and neo-scripting-mcp/tools.py in full
+2. Add `mcp>=1.0.0` to neo-scripting-mcp/requirements.txt
 3. Rewrite server.py to use the official MCP Python SDK.
    Use FastMCP (from mcp.server.fastmcp import FastMCP) — it is the simplest path.
    Example structure:
      from mcp.server.fastmcp import FastMCP
-     mcp = FastMCP("intelliwrite")
+     mcp = FastMCP("neo-scripting")
 
      @mcp.tool()
      async def generate_blog(prompt: str, brand_name: str = "", ...) -> dict:
@@ -71,7 +71,7 @@ TASK
      starlette_app = mcp.get_asgi_app()
 6. Write a smoke test: a bash one-liner using curl that connects to /sse and asserts
    the first data event is received within 3 seconds
-7. Update intelliwrite-mcp/README or docstring to document the new structure
+7. Update neo-scripting-mcp/README or docstring to document the new structure
 
 Do not change tools.py HTTP logic. Do not change the Dockerfile. Only touch server.py
 and requirements.txt.
@@ -92,13 +92,13 @@ Claude.ai lets you set custom headers per connector in the connector settings �
 1. Add an `X-MCP-Secret` header check in `server.py` before the SSE session is established
 2. Use `hmac.compare_digest` (constant-time) to avoid timing attacks
 3. Return `401` if the header is missing or wrong
-4. Add `MCP_SECRET` to `intelliwrite-mcp/.env.example` and Railway env vars
+4. Add `MCP_SECRET` to `neo-scripting-mcp/.env.example` and Railway env vars
 5. Document in README how to set the header in Claude.ai connector settings
 
 ### Claude Code Prompt
 
 ```
-I need you to add shared-secret authentication to the MCP server in intelliwrite-mcp/server.py.
+I need you to add shared-secret authentication to the MCP server in neo-scripting-mcp/server.py.
 
 CONTEXT
 - The server is publicly hosted on Railway with no auth
@@ -107,7 +107,7 @@ CONTEXT
 - MCP_SECRET will be set as a Railway environment variable
 
 TASK
-1. Read intelliwrite-mcp/server.py
+1. Read neo-scripting-mcp/server.py
 2. Add authentication middleware that:
    - Reads MCP_SECRET from os.environ (default empty string if not set)
    - On every request to /sse, checks the X-MCP-Secret header
@@ -116,7 +116,7 @@ TASK
    - Passes through if the secret matches or if MCP_SECRET is not set (dev mode)
 3. Add a startup log message: if MCP_SECRET is empty, log a WARNING:
    "MCP_SECRET not set — server is unauthenticated. Set this in production."
-4. Create intelliwrite-mcp/.env.example if it does not exist and add:
+4. Create neo-scripting-mcp/.env.example if it does not exist and add:
    MCP_SECRET=your-shared-secret-here
 5. Add a comment in server.py explaining how to set the header in Claude.ai:
    # In Claude.ai connector settings → Headers → add: X-MCP-Secret: <your-secret>
@@ -154,7 +154,7 @@ CONTEXT
 - API_BASE_URL is available via os.environ
 
 TASK
-1. Read intelliwrite-mcp/tools.py and intelliwrite-mcp/server.py in full
+1. Read neo-scripting-mcp/tools.py and neo-scripting-mcp/server.py in full
 2. Change the ingest_document tool to accept file_url: str instead of file_path
 3. In the tool handler:
    a. Use httpx.AsyncClient to GET the file_url and read the response bytes
@@ -168,7 +168,7 @@ TASK
 4. Update the tool's description string to say:
    "Ingest a document into the Qdrant knowledge base. Pass a public HTTPS URL
     to a .md, .txt, or .pdf file."
-5. Add httpx to intelliwrite-mcp/requirements.txt if not already present
+5. Add httpx to neo-scripting-mcp/requirements.txt if not already present
 6. Add a try/except around the download step — if the URL is unreachable return a
    clear error dict: {"error": "Could not download file", "url": file_url, "detail": str(e)}
 
@@ -322,7 +322,7 @@ CORS is a browser-enforced policy. The backend must explicitly respond to prefli
 I need to audit and fix CORS configuration in the FastAPI backend.
 
 CONTEXT
-- Frontend is at: https://intelliwrite-neon.vercel.app
+- Frontend is at: https://neo-scripting-neon.vercel.app
 - Backend is a separate Vercel deployment
 - Browser blocks cross-origin requests if CORS headers are missing or wrong
 - This must be verified and hardened, not just assumed to be correct
@@ -330,7 +330,7 @@ CONTEXT
 TASK
 1. Read main.py in full
 2. Check if CORSMiddleware is present. If it is, verify:
-   a. allow_origins includes exactly "https://intelliwrite-neon.vercel.app" (no trailing slash)
+   a. allow_origins includes exactly "https://neo-scripting-neon.vercel.app" (no trailing slash)
    b. allow_origins includes "http://localhost:5173" for local dev
    c. allow_methods includes "OPTIONS" (required for preflight)
    d. allow_headers is ["*"] or explicitly includes "Content-Type"
@@ -340,7 +340,7 @@ TASK
      app.add_middleware(
          CORSMiddleware,
          allow_origins=[
-             "https://intelliwrite-neon.vercel.app",
+             "https://neo-scripting-neon.vercel.app",
              "http://localhost:5173",
          ],
          allow_methods=["GET", "POST", "OPTIONS"],
@@ -348,10 +348,10 @@ TASK
      )
 4. After making changes, write a bash smoke test in a new file scripts/test_cors.sh:
      curl -v -X OPTIONS https://<your-backend-url>/generate \
-       -H "Origin: https://intelliwrite-neon.vercel.app" \
+       -H "Origin: https://neo-scripting-neon.vercel.app" \
        -H "Access-Control-Request-Method: POST" \
        -H "Access-Control-Request-Headers: Content-Type"
-   The response must include: Access-Control-Allow-Origin: https://intelliwrite-neon.vercel.app
+   The response must include: Access-Control-Allow-Origin: https://neo-scripting-neon.vercel.app
 5. Add a comment above the middleware explaining why both origins are listed
 
 Only touch main.py and create scripts/test_cors.sh.
@@ -445,7 +445,7 @@ CONTEXT
 TASK
 1. Read frontend/src/pages/Result.jsx in full
 2. Add sessionStorage persistence:
-     const STORAGE_KEY = "intelliwrite_last_result"
+     const STORAGE_KEY = "neo_scripting_last_result"
 
      useEffect(() => {
        if (state) {
@@ -462,7 +462,7 @@ TASK
 3. Add a null-result UI:
    if (!result) return a div with: "No result found." and an <a href="/">Generate new content</a> link
 4. Read frontend/src/pages/Home.jsx — at the start of the form submit handler, add:
-     sessionStorage.removeItem("intelliwrite_last_result")
+     sessionStorage.removeItem("neo_scripting_last_result")
    so stale results are cleared when a new generation starts
 5. Do not change the result rendering logic — only add the persistence layer
 
@@ -635,7 +635,7 @@ Only touch Home.jsx and StepTracker.jsx.
 
 ---
 
-## Problem 1 — Missing `intelliwrite-mcp/.env.example`
+## Problem 1 — Missing `neo-scripting-mcp/.env.example`
 
 ### Approach
 
@@ -647,10 +647,10 @@ Simple file creation. The `.env.example` is the canonical reference for what env
 I need to create a .env.example file for the MCP server sub-package.
 
 TASK
-1. Read intelliwrite-mcp/server.py and intelliwrite-mcp/tools.py to identify every
+1. Read neo-scripting-mcp/server.py and neo-scripting-mcp/tools.py to identify every
    os.environ.get() or os.getenv() call
 2. Also read the root .env.example to understand the existing format/style
-3. Create intelliwrite-mcp/.env.example with all discovered variables, formatted as:
+3. Create neo-scripting-mcp/.env.example with all discovered variables, formatted as:
    - Required variables first, with a comment explaining what they connect to
    - Optional variables second, with their default value shown in a comment
    - A section at the bottom for variables that will be required after upcoming PRs
@@ -659,10 +659,10 @@ TASK
 4. The file must include at minimum:
    API_BASE_URL, PORT, LOG_LEVEL, and a commented-out MCP_SECRET
 5. After creating the file, update README.md Step 5 (MCP Server section) to add:
-   "Copy intelliwrite-mcp/.env.example to intelliwrite-mcp/.env and fill in your values."
+   "Copy neo-scripting-mcp/.env.example to neo-scripting-mcp/.env and fill in your values."
    directly below the "Prerequisites" or setup heading in that section
 
-Create intelliwrite-mcp/.env.example and update README.md only.
+Create neo-scripting-mcp/.env.example and update README.md only.
 ```
 
 ---
@@ -679,8 +679,8 @@ Create intelliwrite-mcp/.env.example and update README.md only.
 I need to document and verify the Railway start command for the MCP server.
 
 TASK
-1. Read intelliwrite-mcp/railway.toml, intelliwrite-mcp/Dockerfile,
-   and intelliwrite-mcp/server.py
+1. Read neo-scripting-mcp/railway.toml, neo-scripting-mcp/Dockerfile,
+   and neo-scripting-mcp/server.py
 2. Determine the correct start command:
    - If server.py exports starlette_app, the command is:
      uvicorn server:starlette_app --host 0.0.0.0 --port $PORT

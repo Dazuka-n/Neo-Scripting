@@ -157,13 +157,13 @@ async def test_health_has_qdrant_error_field(client):
 async def test_cors_headers_for_production_origin(client):
     """OPTIONS preflight from production frontend origin should get CORS headers."""
     resp = await client.options("/generate", headers={
-        "Origin": "https://intelliwrite-neon.vercel.app",
+        "Origin": "https://neo-scripting-neon.vercel.app",
         "Access-Control-Request-Method": "POST",
         "Access-Control-Request-Headers": "Content-Type",
     })
     assert resp.status_code == 200
     assert "access-control-allow-origin" in resp.headers
-    assert resp.headers["access-control-allow-origin"] == "https://intelliwrite-neon.vercel.app"
+    assert resp.headers["access-control-allow-origin"] == "https://neo-scripting-neon.vercel.app"
 
 
 @pytest.mark.asyncio
@@ -201,5 +201,5 @@ async def test_root_endpoint(client):
     resp = await client.get("/")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["service"] == "Intelliwrite API"
+    assert body["service"] == "Neo Scripting API"
     assert body["version"] == "1.0.0"

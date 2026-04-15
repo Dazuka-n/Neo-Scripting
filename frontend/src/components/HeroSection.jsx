@@ -27,7 +27,7 @@ export default function HeroSection() {
         </h1>
 
         <p className="text-text-secondary text-base sm:text-lg leading-relaxed max-w-2xl mx-auto">
-          Intelliwrite is a multi-agent blog engine that writes answer-engine-optimized articles.
+          Neo Scripting is a multi-agent blog engine that writes answer-engine-optimized articles.
           Use it as an API or connect it directly to Claude, Cursor, or any MCP client.
         </p>
       </div>

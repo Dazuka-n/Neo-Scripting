@@ -1,5 +1,5 @@
 """
-Intelliwrite API — FastAPI entry point.
+Neo Scripting API — FastAPI entry point.
 
 Start with:
     uvicorn main:app --host 0.0.0.0 --port 8000 --reload
@@ -30,7 +30,7 @@ from aeo_blog_engine.config.settings import Config
 from aeo_blog_engine.knowledge.ingest import ingest_docs
 from aeo_blog_engine.pipeline.blog_workflow import AEOBlogPipeline, langfuse
 
-logger = logging.getLogger("intelliwrite-api")
+logger = logging.getLogger("neo-scripting-api")
 
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Intelliwrite API",
+    title="Neo Scripting API",
     version="1.0.0",
     description="AI-powered AEO/GEO blog generation engine",
     lifespan=lifespan,
@@ -66,7 +66,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://intelliwrite-neon.vercel.app",
+        "https://neo-scripting-neon.vercel.app",
         "http://localhost:5173",
     ],
     allow_credentials=True,
@@ -123,7 +123,7 @@ class HealthResponse(BaseModel):
 
 @app.get("/", tags=["meta"])
 async def root():
-    return {"service": "Intelliwrite API", "version": "1.0.0", "status": "running"}
+    return {"service": "Neo Scripting API", "version": "1.0.0", "status": "running"}
 
 
 @app.get("/health", tags=["meta"])

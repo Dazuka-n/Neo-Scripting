@@ -1,5 +1,5 @@
 """
-server.py — Intelliwrite MCP Server (SSE transport).
+server.py — Neo Scripting MCP Server (SSE transport).
 
 Exposes three MCP tools:
   • generate_blog
@@ -37,7 +37,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
     stream=sys.stdout,
 )
-logger = logging.getLogger("intelliwrite-mcp")
+logger = logging.getLogger("neo-scripting-mcp")
 
 # ── Config validation (fail fast before binding any port) ─────────────────────
 validate_config()
@@ -58,7 +58,7 @@ def _verify_secret(request: Request) -> Response | None:
     return None
 
 # ── MCP server instance ───────────────────────────────────────────────────────
-mcp_server = Server(name="intelliwrite", version="1.0.0")
+mcp_server = Server(name="neo-scripting", version="1.0.0")
 
 
 # ── Tool registry ─────────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ async def messages_endpoint(request: Request) -> None:
 async def health_endpoint(_request: Request) -> JSONResponse:
     """GET /health — Liveness probe for the MCP server itself."""
     return JSONResponse(
-        {"status": "ok", "server": "intelliwrite-mcp", "version": "1.0.0"}
+        {"status": "ok", "server": "neo-scripting-mcp", "version": "1.0.0"}
     )
 
 
@@ -130,7 +130,7 @@ async def health_endpoint(_request: Request) -> JSONResponse:
 
 @asynccontextmanager
 async def lifespan(_app: Starlette):
-    logger.info("=== Intelliwrite MCP Server 1.0.0 ===")
+    logger.info("=== Neo Scripting MCP Server 1.0.0 ===")
     logger.info("Backend URL:  %s", Config.API_BASE_URL)
     logger.info("SSE endpoint: GET  /sse")
     logger.info("Messages:     POST /messages")

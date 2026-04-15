@@ -7,7 +7,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "intelliwrite-mcp"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "neo-scripting-mcp"))
 
 # Set required env vars
 os.environ.setdefault("API_BASE_URL", "http://localhost:8000")
@@ -89,7 +89,7 @@ async def test_mcp_health_endpoint():
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
-    assert body["server"] == "intelliwrite-mcp"
+    assert body["server"] == "neo-scripting-mcp"
 
 
 # ── Issue 1.3: ingest_document schema ────────────────────────────────────────

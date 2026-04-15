@@ -75,7 +75,7 @@ def get_knowledge_base():
         return _cached_vector_db
     except Exception as exc:
         raise RuntimeError(
-            f"[Intelliwrite] Cannot connect to Qdrant at '{Config.QDRANT_URL}'.\n"
+            f"[Neo Scripting] Cannot connect to Qdrant at '{Config.QDRANT_URL}'.\n"
             "Please ensure:\n"
             "  1. Qdrant is running (docker run -p 6333:6333 qdrant/qdrant)\n"
             "  2. QDRANT_URL and QDRANT_API_KEY are set correctly in your .env\n"
@@ -110,7 +110,7 @@ def _select_embedder():
                 dimensions=3072,
                 extra_headers={
                     "HTTP-Referer": os.getenv("OPENROUTER_APP_URL", "https://localhost"),
-                    "X-Title": os.getenv("OPENROUTER_APP_NAME", "Intelliwrite"),
+                    "X-Title": os.getenv("OPENROUTER_APP_NAME", "Neo Scripting"),
                 },
             )
         if provider == "gemini" and Config.GEMINI_API_KEY:
@@ -122,6 +122,6 @@ def _select_embedder():
             )
 
     raise ValueError(
-        "[Intelliwrite] No embedder could be initialized.\n"
+        "[Neo Scripting] No embedder could be initialized.\n"
         "Set at least one of: OPENAI_API_KEY, OPENROUTER_API_KEY, or GEMINI_API_KEY."
     )

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import ClientTabs from './ClientTabs'
 
-const MCP_URL = 'https://intelliwrite-mcp.onrender.com/sse'
+const MCP_URL = 'https://neo-scripting-mcp.onrender.com/sse'
 
 const EXAMPLE_PROMPTS = [
   'Generate a blog about AI in logistics for my brand',
   'Write LinkedIn and Twitter posts for the blog you just created',
-  'Ingest this document into the Intelliwrite knowledge base',
+  'Ingest this document into the Neo Scripting knowledge base',
 ]
 
 export default function MCPSection() {
@@ -43,11 +43,11 @@ export default function MCPSection() {
         <p className="label-caps mb-4">MCP Integration</p>
 
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-3">
-          Connect Intelliwrite to Your Agent
+          Connect Neo Scripting to Your Agent
         </h2>
 
         <p className="text-white/45 text-sm sm:text-base leading-relaxed mb-10 max-w-xl">
-          Intelliwrite runs as a live MCP server. Point any compatible AI client at the URL below
+          Neo Scripting runs as a live MCP server. Point any compatible AI client at the URL below
           and start generating content from inside your agent workflow.
         </p>
 

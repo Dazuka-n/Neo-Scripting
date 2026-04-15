@@ -29,8 +29,8 @@ def validate_config() -> None:
     """
     if not Config.API_BASE_URL:
         raise EnvironmentError(
-            "\n[intelliwrite-mcp] Startup failed — missing required environment variable:\n"
-            "  - API_BASE_URL  (e.g. https://api.intelliwrite.ai or http://localhost:8000)\n\n"
+            "\n[neo-scripting-mcp] Startup failed — missing required environment variable:\n"
+            "  - API_BASE_URL  (e.g. https://api.neo-scripting.ai or http://localhost:8000)\n\n"
             "Set it in your .env file. See .env.example for reference."
         )
 
