@@ -34,8 +34,8 @@ node_modules/
 out/
 *.local
 .eslintcache
-frontend/dist/
-frontend/node_modules/
+neo-scripting-frontend/dist/
+neo-scripting-frontend/node_modules/
 
 # ── MCP Server ────────────────────────────────────
 neo-scripting-mcp/.env

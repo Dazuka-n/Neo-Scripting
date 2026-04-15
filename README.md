@@ -156,7 +156,7 @@ Neo Scripting/
 │   └── tools/
 │       └── custom_duckduckgo.py     ← Custom Agno toolkit
 │
-├── frontend/                        ← React SPA
+├── neo-scripting-frontend/          ← React SPA
 │   └── src/
 │       ├── App.jsx                  ← Router (/ and /result)
 │       ├── pages/
@@ -296,7 +296,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ### 4️⃣ Frontend Setup
 
 ```bash
-cd frontend
+cd neo-scripting-frontend
 npm install
 
 # Set your backend URL
@@ -404,7 +404,7 @@ Connect any MCP-compatible AI client (Claude Desktop, Cursor, etc.) to `GET /sse
 | Component | Platform | Config |
 |---|---|---|
 | Backend API | Vercel (serverless Python) | `vercel.json` → `api/index.py` |
-| Frontend SPA | Vercel | `frontend/vercel.json` |
+| Frontend SPA | Vercel | `neo-scripting-frontend/vercel.json` |
 | MCP Server | Railway (Docker) | `railway.toml` + `Dockerfile` |
 
 ---
